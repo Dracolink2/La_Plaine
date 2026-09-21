@@ -30,3 +30,24 @@ blockRegistry.register({
     textures: { all: '/static/textures/neige.png' },
     transparent: false
 });
+// Herbe Froide (ID 13)
+blockRegistry.register({
+    id: 13,
+    name: 'Herbe Froide',
+    textures: {
+        top: '/static/textures/grass_top_cold.png',
+        bottom: '/static/textures/dirt.png',
+        sides: '/static/textures/grass_side_cold.png'
+    },
+    transparent: false
+});
+
+// Dalle de Neige (ID 14)
+blockRegistry.register({
+    id: 14,
+    name: 'Dalle de Neige',
+    textures: { all: '/static/textures/snow_slab.png' },
+    transparent: true,
+    alphaTest: 0.5,
+    isSlab: true // Optionnel : flag pour votre mesher 3D (hauteur 0.2)
+});
