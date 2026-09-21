@@ -47,7 +47,6 @@ class Inventory {
 
         let remaining = amount;
 
-        // Fill existing stacks first
         for (let i = 0; i < INVENTORY_SIZE && remaining > 0; i++) {
             const slot = this.slots[i];
             if (slot.type === blockId && slot.count < STACK_LIMIT) {
@@ -58,7 +57,6 @@ class Inventory {
             }
         }
 
-        // Fill empty slots
         for (let i = 0; i < INVENTORY_SIZE && remaining > 0; i++) {
             const slot = this.slots[i];
             if (slot.type === 0) {
@@ -158,12 +156,11 @@ class Player {
         this.camera = camera;
         this.world = world;
 
-        // Fallback sécurisé pour la compatibilité PointerLockControls (Module ou UMD)
         const ControlsClass = THREE.PointerLockControls || window.PointerLockControls;
         if (typeof ControlsClass === 'function') {
             this.controls = new ControlsClass(camera, domElement);
         } else {
-            console.error("PointerLockControls n'a pas été trouvé. Assurez-vous qu'il est inclus correctement.");
+            console.error("PointerLockControls n'a pas été trouvé.");
         }
 
         this.inventory = new Inventory();
@@ -175,7 +172,6 @@ class Player {
         this.position = new THREE.Vector3(0.5, 100, 0.5);
         this.velocity = new THREE.Vector3();
 
-        // Vector Pooling (Évite allocations de mémoire fréquentes pendant le loop)
         this.lookDir = new THREE.Vector3();
         this.pivot = new THREE.Vector3();
         this.desiredPos = new THREE.Vector3();
@@ -198,6 +194,8 @@ class Player {
         this.gravity = 28.0;
 
         this.stepTimer = 0;
+        
+        // 0: 1re personne, 1: 3e personne vue arrière, 2: 3e personne vue face
         this.cameraMode = 0;
         this.thirdPersonDistance = 3.5;
 
@@ -320,6 +318,7 @@ class Player {
                         soundManager?.playJump?.();
                     }
                     break;
+                case 'F3':
                 case 'F5':
                     event.preventDefault();
                     this.toggleCameraMode();
@@ -345,7 +344,6 @@ class Player {
             }
         };
 
-        // Évite les touches "collées" quand on ouvre la pause/l'inventaire en marchant
         this.controls?.addEventListener('unlock', () => {
             this.moveForward = this.moveBackward = this.moveLeft = this.moveRight = this.spaceHeld = false;
         });
@@ -376,8 +374,9 @@ class Player {
     }
 
     toggleCameraMode() {
-        this.cameraMode = (this.cameraMode + 1) % 2;
-        this.playerGroup.visible = (this.cameraMode === 1);
+        // Switch entre 0 (1re pers), 1 (3e pers arrière), 2 (3e pers face)
+        this.cameraMode = (this.cameraMode + 1) % 3;
+        this.playerGroup.visible = (this.cameraMode !== 0);
     }
 
     testCollision(posX, posY, posZ) {
@@ -413,11 +412,19 @@ class Player {
         } else {
             this.camera.getWorldDirection(this.lookDir);
 
-            this.pivot.y += 0.3;
-            this.desiredPos.copy(this.pivot).addScaledVector(this.lookDir, -this.thirdPersonDistance);
+            this.pivot.y += 0.2;
+            
+            // Si cameraMode === 1 -> Vue arrière (-distance)
+            // Si cameraMode === 2 -> Vue face (+distance)
+            const dirFactor = (this.cameraMode === 1) ? -1 : 1;
+            this.desiredPos.copy(this.pivot).addScaledVector(this.lookDir, dirFactor * this.thirdPersonDistance);
+            
             const finalPos = this.raycastCameraCollision(this.pivot, this.desiredPos);
-
             this.controls?.getObject().position.copy(finalPos);
+            
+            if (this.cameraMode === 2) {
+                this.controls?.getObject().lookAt(this.pivot);
+            }
         }
 
         this.playerGroup.position.copy(this.position);
@@ -488,7 +495,6 @@ class Player {
             this.velocity.z = 0;
         }
 
-        // Nage : gravité réduite, Espace pour remonter (et sortir de l'eau)
         const inWater = this.world.isFluidAt(this.position.x, this.position.y + 0.5, this.position.z);
         if (inWater) {
             const headInWater = this.world.isFluidAt(this.position.x, this.position.y + this.eyeHeight, this.position.z);
@@ -505,7 +511,6 @@ class Player {
 
         const halfWidth = this.width / 2;
 
-        // Déplacement Axe X
         this.position.x += this.velocity.x * dt;
         let block = this.testCollision(this.position.x, this.position.y, this.position.z);
         if (block) {
@@ -513,7 +518,6 @@ class Player {
             this.velocity.x = 0;
         }
 
-        // Déplacement Axe Z
         this.position.z += this.velocity.z * dt;
         block = this.testCollision(this.position.x, this.position.y, this.position.z);
         if (block) {
@@ -521,7 +525,6 @@ class Player {
             this.velocity.z = 0;
         }
 
-        // Déplacement Axe Y
         const velocityBeforeY = this.velocity.y;
         this.position.y += this.velocity.y * dt;
         block = this.testCollision(this.position.x, this.position.y, this.position.z);
@@ -541,7 +544,6 @@ class Player {
             this.canJump = false;
         }
 
-        // Bruits de pas
         if ((Math.abs(this.velocity.x) > 0 || Math.abs(this.velocity.z) > 0) && this.canJump) {
             this.stepTimer += dt;
             if (this.stepTimer > 0.35) {
@@ -557,7 +559,6 @@ class Player {
             }
         }
 
-        // Failsafe Chute dans le vide
         if (this.position.y < -5) {
             const currentX = Math.floor(this.position.x);
             const currentZ = Math.floor(this.position.z);

@@ -22,3 +22,11 @@ blockRegistry.register({
     isFluid: true,
     viscosity: 1
 });
+
+// Neige
+blockRegistry.register({
+    id: 12,
+    name: 'Neige',
+    textures: { all: '/static/textures/neige.png' },
+    transparent: false
+});
