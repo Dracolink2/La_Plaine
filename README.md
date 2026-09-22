@@ -7,3 +7,5 @@ le premier 0. c'est pour la version du jeu
 le deuxième 0. c'est pour la sous-version 
 le troisième 0. c'est pour les petite correction de bugs
 et le dernier 0 c'est pour les changements de textures et sons 
+Attention : je ne met pas toujours à jour la version EXE du jeu 
+Attention : je ne dit pas que le jeu est bien , c'est surtout juste un projet fun pour moi et mon ami 
