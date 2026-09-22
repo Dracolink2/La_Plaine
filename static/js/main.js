@@ -41,7 +41,7 @@
         applyResolution();
         window.addEventListener('resize', applyResolution);
 
-        // Overlay "sous l'eau" : un simple div translucide (bien moins coûteux qu'un filtre CSS sur le canvas)
+        // Overlay "sous l'eau" : un simple div translucide
         const waterOverlay = document.createElement('div');
         waterOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(20,80,170,0.32);pointer-events:none;display:none;z-index:12;';
         document.body.appendChild(waterOverlay);
@@ -114,7 +114,7 @@
             if (!e.detail.open && player.controls) player.controls.lock();
         });
 
-        // --- 5. INTERACTION AVEC LES BLOCS (rayon DDA, zéro allocation) ---
+        // --- 5. INTERACTION AVEC LES BLOCS ---
         const REACH = 6;
         const hit = { x: 0, y: 0, z: 0, id: 0, nx: 0, ny: 0, nz: 0 };
         const dir = new THREE.Vector3();
@@ -146,7 +146,6 @@
             const slot = player.inventory.getSelectedSlot();
             if (!slot || slot.type === 0 || slot.count <= 0) return;
 
-            // Viser une plante la remplace ; sinon on pose contre la face visée
             let px = hit.x + hit.nx, py = hit.y + hit.ny, pz = hit.z + hit.nz;
             if (world.plantT[hit.id]) { px = hit.x; py = hit.y; pz = hit.z; }
             if (py < 0 || py >= world.maxHeight) return;
@@ -154,7 +153,6 @@
             const cur = world.getBlockI(px, py, pz);
             if (cur !== 0 && !world.fluidT[cur] && !world.plantT[cur]) return;
 
-            // Ne pas s'emmurer : refuse si un bloc plein chevauche le joueur
             if (world.solidT[slot.type]) {
                 const p = player.position, hw = player.width / 2;
                 if (px < p.x + hw && px + 1 > p.x - hw &&
@@ -199,14 +197,12 @@
             requestAnimationFrame(animate);
             now = now || performance.now();
 
-            // Limiteur de FPS (réglage du menu)
             if (minFrame && now - lastFrame < minFrame - 1) return;
             lastFrame = now;
 
             const delta = Math.min((now - prevTime) * 0.001, 0.1);
             prevTime = now;
 
-            // Compteur FPS + résolution adaptative (mode auto uniquement)
             frameCount++;
             if (now - lastFpsUpdate >= 1000) {
                 const fps = (frameCount * 1000) / (now - lastFpsUpdate);
@@ -239,7 +235,6 @@
                 lastChunkUpdate = now;
             }
 
-            // Bloc visé + répétition du clic maintenu
             const locked = player.controls && player.controls.isLocked;
             if (locked && updateTarget()) {
                 selBox.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);
@@ -252,7 +247,6 @@
                 selBox.visible = false;
             }
 
-            // Sous l'eau : brouillard épais + voile bleu + son étouffé
             const underwater = world.isFluidAt(camera.position.x, camera.position.y, camera.position.z);
             if (underwater !== wasUnderwater) {
                 wasUnderwater = underwater;

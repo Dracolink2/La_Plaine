@@ -51,3 +51,69 @@ blockRegistry.register({
     alphaTest: 0.5,
     isSlab: true // Optionnel : flag pour votre mesher 3D (hauteur 0.2)
 });
+// Bûche de Sapin (ID 15)
+blockRegistry.register({
+    id: 15,
+    name: 'Bûche de Sapin',
+    textures: {
+        top: '/static/textures/pine_top.png',
+        bottom: '/static/textures/pine_top.png',
+        sides: '/static/textures/pine_side.png'
+    },
+    transparent: false
+});
+
+// Feuilles de Sapin (ID 16)
+blockRegistry.register({
+    id: 16,
+    name: 'Feuilles de Sapin',
+    textures: { all: '/static/textures/pine_leaves.png' },
+    transparent: true,
+    alphaTest: 0.5
+});
+// Deepslate (ID 17)
+blockRegistry.register({
+    id: 17,
+    name: 'Deepslate',
+    textures: { all: '/static/textures/deepslate.png' },
+    transparent: false
+});
+// Pied de Champignon (ID 18)
+blockRegistry.register({
+    id: 18,
+    name: 'Pied de Champignon',
+    textures: { all: '/static/textures/mushroom_stem.png' },
+    transparent: false
+});
+
+// Chapeau de Champignon Rouge (ID 19)
+blockRegistry.register({
+    id: 19,
+    name: 'Chapeau Champignon Rouge',
+    textures: { all: '/static/textures/mushroom_block_red.png' },
+    transparent: false
+});
+
+// Mycélium (ID 20)
+blockRegistry.register({
+    id: 20,
+    name: 'Mycélium',
+    textures: {
+        top: '/static/textures/mycelium_top.png',
+        bottom: '/static/textures/dirt.png',
+        sides: '/static/textures/mycelium_side.png'
+    },
+    transparent: false
+});
+
+// Petit Champignon Lumineux (ID 21)
+blockRegistry.register({
+    id: 21,
+    name: 'Petit Champignon',
+    textures: { all: '/static/textures/red_mushroom.png' },
+    transparent: true,
+    alphaTest: 0.5,
+    isPlant: true,
+    lightLevel: 8, // Émet un peu de lumière
+    emitColor: 0xff4444
+});

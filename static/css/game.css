@@ -40,6 +40,29 @@ body {
     pointer-events: none;
 }
 
+/* BARRE DE VIE */
+#health-container {
+    position: absolute;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+    z-index: 15;
+    pointer-events: none;
+}
+
+.heart-icon {
+    width: 20px;
+    height: 20px;
+    background-image: url('/static/textures/hearth.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    image-rendering: pixelated;
+    transition: opacity 0.2s ease;
+}
+
 /* HOTBAR & INVENTAIRE */
 #hotbar-container {
     position: absolute;

@@ -165,6 +165,10 @@ class Player {
 
         this.inventory = new Inventory();
 
+        // Santé du joueur (9 cœurs)
+        this.maxHealth = 9;
+        this.health = 9;
+
         this.width = 0.6;
         this.height = 1.8;
         this.eyeHeight = 1.62;
@@ -204,6 +208,32 @@ class Player {
         this.initMeshPlayer();
         this.initControls();
         this.updateCameraPosition();
+        this.updateHealthUI();
+    }
+
+    updateHealthUI() {
+        const container = document.getElementById('health-container');
+        if (!container) return;
+
+        container.innerHTML = '';
+        for (let i = 0; i < this.maxHealth; i++) {
+            const heart = document.createElement('div');
+            heart.className = 'heart-icon';
+            if (i >= this.health) {
+                heart.style.opacity = '0.25';
+            }
+            container.appendChild(heart);
+        }
+    }
+
+    takeDamage(amount) {
+        this.health = Math.max(0, this.health - amount);
+        this.updateHealthUI();
+    }
+
+    heal(amount) {
+        this.health = Math.min(this.maxHealth, this.health + amount);
+        this.updateHealthUI();
     }
 
     getAABB() {
@@ -374,7 +404,6 @@ class Player {
     }
 
     toggleCameraMode() {
-        // Switch entre 0 (1re pers), 1 (3e pers arrière), 2 (3e pers face)
         this.cameraMode = (this.cameraMode + 1) % 3;
         this.playerGroup.visible = (this.cameraMode !== 0);
     }
@@ -414,8 +443,6 @@ class Player {
 
             this.pivot.y += 0.2;
             
-            // Si cameraMode === 1 -> Vue arrière (-distance)
-            // Si cameraMode === 2 -> Vue face (+distance)
             const dirFactor = (this.cameraMode === 1) ? -1 : 1;
             this.desiredPos.copy(this.pivot).addScaledVector(this.lookDir, dirFactor * this.thirdPersonDistance);
             

@@ -1,9 +1,9 @@
 biomeRegistry.register({
     id: 'montagne',
     name: 'Montagne',
-    surfaceBlock: 1,    // Pierre apparente par défaut
-    subSurfaceBlock: 1, // Pierre
-    stoneBlock: 1,      // Pierre
+    surfaceBlock: 17,   // Deepslate apparente par défaut
+    subSurfaceBlock: 17,// Deepslate
+    stoneBlock: 17,     // Deepslate
 
     baseHeight: 32,
     elevationScale: 28,
