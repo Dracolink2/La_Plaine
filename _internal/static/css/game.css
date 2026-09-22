@@ -1,0 +1,260 @@
+* {
+    box-sizing: border-box;
+    user-select: none;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #000;
+}
+
+#crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border: 1px solid black;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    border-radius: 50%;
+    z-index: 10;
+}
+
+/* Compteur FPS */
+#fps-counter {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 6px 12px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #00FF00;
+    font-size: 0.9rem;
+    font-weight: bold;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 15;
+    pointer-events: none;
+}
+
+/* BARRE DE VIE */
+#health-container {
+    position: absolute;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+    z-index: 15;
+    pointer-events: none;
+}
+
+.heart-icon {
+    width: 20px;
+    height: 20px;
+    background-image: url('/static/textures/hearth.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    image-rendering: pixelated;
+    transition: opacity 0.2s ease;
+}
+
+/* HOTBAR & INVENTAIRE */
+#hotbar-container {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.65);
+    padding: 6px;
+    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    z-index: 15;
+}
+
+.hotbar-slot {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+.hotbar-slot.active {
+    border-color: #4CAF50;
+    background: rgba(76, 175, 80, 0.25);
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.6);
+}
+
+.hotbar-slot .slot-key {
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    font-size: 0.7rem;
+    color: #aaa;
+}
+
+.hotbar-slot .slot-name {
+    font-size: 0.75rem;
+    text-align: center;
+    word-break: break-word;
+    line-height: 1;
+    padding: 2px;
+}
+
+.hotbar-slot .slot-count {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 0.8rem;
+    color: #fff;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px #000;
+}
+
+/* Écrans overlay */
+#click-overlay, #pause-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 20;
+    color: white;
+}
+
+#click-overlay h2, #pause-overlay h2 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px #000;
+}
+
+.btn-pause {
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: white;
+    background-color: #333;
+    border: 2px solid #555;
+    border-radius: 6px;
+    cursor: pointer;
+    margin: 6px;
+    width: 260px;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-pause:hover {
+    background-color: #4CAF50;
+    border-color: #45a049;
+    transform: scale(1.02);
+}
+
+/* PANNEAU D'INVENTAIRE COMPLET (touche E) */
+#inventory-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 25;
+}
+
+.inv-box {
+    background: rgba(20, 20, 20, 0.95);
+    border: 2px solid #4CAF50;
+    border-radius: 10px;
+    padding: 24px 28px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+    color: white;
+    text-align: center;
+    max-width: 520px;
+}
+
+.inv-box h2 {
+    margin: 0 0 6px 0;
+    color: #4CAF50;
+    text-shadow: 2px 2px 4px #000;
+}
+
+.inv-hint {
+    margin: 0 0 16px 0;
+    font-size: 0.8rem;
+    color: #aaa;
+}
+
+#inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(9, 48px);
+    gap: 6px;
+    justify-content: center;
+}
+
+.inv-slot {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: grab;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.inv-slot.filled {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.inv-slot:hover {
+    border-color: #4CAF50;
+}
+
+/* Petit séparateur visuel entre l'inventaire principal (27) et la hotbar (9) */
+.inv-slot-hotbar {
+    border-color: rgba(76, 175, 80, 0.45);
+}
+
+.inv-slot-name {
+    font-size: 0.62rem;
+    text-align: center;
+    word-break: break-word;
+    line-height: 1;
+    padding: 2px;
+    color: white;
+}
+
+.inv-slot-count {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 0.75rem;
+    color: #fff;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px #000;
+}

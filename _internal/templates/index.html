@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Plaine V0.1.0.0 - En Jeu</title>
+    <link rel="stylesheet" href="/static/css/game.css">
+    <style>
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-shadow: 2px 2px 4px #000;
+        }
+
+        #loading-overlay .loading-box {
+            background: rgba(0, 0, 0, 0.85);
+            padding: 30px 50px;
+            border-radius: 10px;
+            border: 2px solid #555;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        #loading-overlay h2 {
+            margin: 0 0 10px 0;
+            font-size: 2rem;
+            color: #4CAF50;
+        }
+
+        #loading-overlay p {
+            margin: 0;
+            font-size: 1.1rem;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ecran de chargement opacifié -->
+    <div id="loading-overlay">
+        <div class="loading-box">
+            <h2>Chargement du Monde...</h2>
+            <p id="loading-text">Détection et génération du terrain en cours...</p>
+        </div>
+    </div>
+
+    <div id="crosshair"></div>
+
+    <div id="fps-counter">FPS: <span id="fps-val">0</span></div>
+
+    <!-- BARRE DE VIE -->
+    <div id="health-container"></div>
+
+    <!-- HOTBAR -->
+    <div id="hotbar-container">
+        <div class="hotbar-slot active" id="slot-0"><span class="slot-key">1</span><span class="slot-name"></span><span class="slot-count"></span></div>
+        <div class="hotbar-slot" id="slot-1"><span class="slot-key">2</span><span class="slot-name"></span><span class="slot-count"></span></div>
+        <div class="hotbar-slot" id="slot-2"><span class="slot-key">3</span><span class="slot-name"></span><span class="slot-count"></span></div>
+        <div class="hotbar-slot" id="slot-3"><span class="slot-key">4</span><span class="slot-name"></span><span class="slot-count"></span></div>
+        <div class="hotbar-slot" id="slot-4"><span class="slot-key">5</span><span class="slot-name"></span><span class="slot-count"></span></div>
+        <div class="hotbar-slot" id="slot-5"><span class="slot-key">6</span><span class="slot-name"></span><span class="slot-count"></span></div>
+        <div class="hotbar-slot" id="slot-6"><span class="slot-key">7</span><span class="slot-name"></span><span class="slot-count"></span></div>
+        <div class="hotbar-slot" id="slot-7"><span class="slot-key">8</span><span class="slot-name"></span><span class="slot-count"></span></div>
+        <div class="hotbar-slot" id="slot-8"><span class="slot-key">9</span><span class="slot-name"></span><span class="slot-count"></span></div>
+    </div>
+
+    <!-- INVENTAIRE COMPLET (touche E) -->
+    <div id="inventory-panel" style="display: none;">
+        <div class="inv-box">
+            <h2>Inventaire</h2>
+            <p class="inv-hint">Glisser-déposer pour organiser · Stack max : 100 · "E" ou "Échap" pour fermer</p>
+            <div id="inventory-grid"></div>
+        </div>
+    </div>
+
+    <div id="click-overlay" style="display: none;">
+        <h2>Prêt à jouer ?</h2>
+        <button id="btn-start" class="btn-pause">Cliquer pour commencer</button>
+    </div>
+
+    <div id="pause-overlay" style="display: none;">
+        <h2>PAUSE</h2>
+
+        <div style="margin-bottom: 15px; color: white;">
+            <label for="cloud-toggle-game" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="cloud-toggle-game" checked style="cursor: pointer; width: 18px; height: 18px;">
+                Afficher les nuages 3D
+            </label>
+        </div>
+
+        <div style="margin-bottom: 15px; color: white;">
+            <label for="water-shader-toggle-game" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="water-shader-toggle-game" checked style="cursor: pointer; width: 18px; height: 18px;">
+                Effet d'eau avancé (shader)
+            </label>
+        </div>
+
+        <button id="btn-resume" class="btn-pause">Reprendre</button>
+        <a href="/" class="btn-pause">Menu Principal</a>
+    </div>
+
+    <!-- Bibliothèques locales / CDN au format UMD (s'attachent à window/THREE) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+
+    <!-- Registres de base -->
+    <script src="/static/js/blocks/register.js"></script>
+    <script src="/static/js/biomes/register.js"></script>
+
+    <!-- Chargeur dynamique de modules (Plug & Play) -->
+    <script>
+        function loadScript(url) {
+            return new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = url;
+                s.onload = resolve;
+                s.onerror = () => reject(new Error(`Impossible de charger le script : ${url}`));
+                document.head.appendChild(s);
+            });
+        }
+
+        async function initPluginsAndEngine() {
+            const loadingText = document.getElementById('loading-text');
+            try {
+                if (loadingText) loadingText.textContent = "Détection des blocs et biomes...";
+                const res = await fetch('/api/modules');
+                const modules = await res.json();
+
+                // Charger tous les blocs trouvés dans static/js/blocks/
+                for (const file of modules.blocks) {
+                    await loadScript(`/static/js/blocks/${file}`);
+                }
+
+                // Charger tous les biomes trouvés dans static/js/biomes/
+                for (const file of modules.biomes) {
+                    await loadScript(`/static/js/biomes/${file}`);
+                }
+
+                if (loadingText) loadingText.textContent = "Initialisation du moteur de jeu...";
+
+                // Charger le moteur principal une fois tous les modules prêts
+                await loadScript('/static/js/sound.js');
+                await loadScript('/static/js/particles.js');
+                await loadScript('/static/js/world.js');
+                await loadScript('/static/js/player.js');
+                await loadScript('/static/js/inventory-ui.js');
+                await loadScript('/static/js/main.js');
+
+            } catch (err) {
+                console.error("Erreur lors du chargement des plugins :", err);
+                if (loadingText) loadingText.textContent = "Erreur de chargement. Vérifiez la console.";
+            }
+        }
+
+        // Lancer le chargement au démarrage de la page
+        initPluginsAndEngine();
+    </script>
+</body>
+</html>
