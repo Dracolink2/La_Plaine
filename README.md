@@ -9,3 +9,4 @@ le troisième 0. c'est pour les petite correction de bugs
 et le dernier 0 c'est pour les changements de textures et sons 
 Attention : je ne met pas toujours à jour la version EXE du jeu 
 Attention : je ne dit pas que le jeu est bien , c'est surtout juste un projet fun pour moi et mon ami 
+Je tient à remercier Founé , une amie du collège de Naëlhann qui as donné l'idée d'une fleur , et cela à donc donné un biome spécial
