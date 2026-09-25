@@ -1,5 +1,5 @@
 // ============================================================================
-//  main.js — La Plaine (version optimisée)
+//  main.js — La Plaine (version optimisée avec système de Chat & Commandes)
 // ============================================================================
 (function () {
     const loadingText = document.getElementById('loading-text');
@@ -64,6 +64,187 @@
         const cloudToggleGame = document.getElementById('cloud-toggle-game');
         const waterShaderToggleGame = document.getElementById('water-shader-toggle-game');
 
+        // --- 2.5 INTERFACE ET LOGIQUE DU CHAT / COMMANDES ---
+        const chatContainer = document.createElement('div');
+        chatContainer.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 380px;
+            max-height: 250px;
+            display: flex;
+            flex-direction: column;
+            z-index: 20;
+            font-family: monospace;
+            font-size: 14px;
+            pointer-events: none;
+        `;
+
+        const chatLogs = document.createElement('div');
+        chatLogs.style.cssText = `
+            flex: 1;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.4);
+            color: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 2px #000;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        `;
+
+        const chatInput = document.createElement('input');
+        chatInput.type = 'text';
+        chatInput.placeholder = 'Appuyez sur Entrée pour envoyer une commande...';
+        chatInput.style.cssText = `
+            width: 100%;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: #fff;
+            border-radius: 4px;
+            outline: none;
+            display: none;
+            pointer-events: auto;
+            box-sizing: border-box;
+        `;
+
+        chatContainer.appendChild(chatLogs);
+        chatContainer.appendChild(chatInput);
+        document.body.appendChild(chatContainer);
+
+        let isChatOpen = false;
+
+        function addChatMessage(msg, color = '#ffffff') {
+            const line = document.createElement('div');
+            line.style.color = color;
+            line.textContent = msg;
+            chatLogs.appendChild(line);
+            chatLogs.scrollTop = chatLogs.scrollHeight;
+        }
+
+        function openChat() {
+            if (isChatOpen) return;
+            isChatOpen = true;
+            chatInput.style.display = 'block';
+            chatInput.focus();
+            if (player.controls) player.controls.unlock();
+        }
+
+        function closeChat() {
+            if (!isChatOpen) return;
+            isChatOpen = false;
+            chatInput.value = '';
+            chatInput.style.display = 'none';
+            if (player.controls) player.controls.lock();
+        }
+
+        function executeCommand(cmdText) {
+            const trimmed = cmdText.trim();
+            if (!trimmed) return;
+
+            addChatMessage('> ' + trimmed, '#aaaaaa');
+
+            const lower = trimmed.toLowerCase();
+
+            // Commande : list biomes
+            if (lower === 'list biomes') {
+                let biomes = [];
+                if (typeof biomeRegistry !== 'undefined' && biomeRegistry) {
+                    biomes = Object.keys(biomeRegistry);
+                } else if (world.biomeRegistry) {
+                    biomes = Object.keys(world.biomeRegistry);
+                } else if (world.biomes) {
+                    biomes = Object.keys(world.biomes);
+                }
+
+                if (biomes.length > 0) {
+                    addChatMessage('Biomes disponibles : ' + biomes.join(', '), '#55ff55');
+                } else {
+                    addChatMessage('Aucun biome répertorié ou registre indisponible.', '#ff5555');
+                }
+                return;
+            }
+
+            // Commande : TP biome <nom>
+            if (lower.startsWith('tp biome ')) {
+                const targetBiomeName = trimmed.substring(9).trim();
+                if (!targetBiomeName) {
+                    addChatMessage('Usage: TP biome <nom_du_biome>', '#ffaa00');
+                    return;
+                }
+
+                addChatMessage(`Recherche du biome "${targetBiomeName}"...`, '#ffff55');
+
+                // Recherche progressive en spirale autour du joueur
+                let found = false;
+                const startX = Math.floor(player.position.x);
+                const startZ = Math.floor(player.position.z);
+                const step = 32;
+                const maxRadius = 3000;
+
+                for (let r = step; r <= maxRadius; r += step) {
+                    for (let dx = -r; dx <= r; dx += step) {
+                        for (let dz = -r; dz <= r; dz += step) {
+                            if (Math.abs(dx) !== r && Math.abs(dz) !== r) continue;
+
+                            const testX = startX + dx;
+                            const testZ = startZ + dz;
+                            const biomeAtPos = typeof world.getBiomeAt === 'function' ? world.getBiomeAt(testX, testZ) : null;
+                            const biomeName = (typeof biomeAtPos === 'string' ? biomeAtPos : (biomeAtPos && biomeAtPos.name)) || '';
+
+                            if (biomeName.toLowerCase() === targetBiomeName.toLowerCase()) {
+                                // Biome trouvé ! Téléportation
+                                let surfaceY = 64;
+                                if (typeof world.getTerrainHeight === 'function') {
+                                    surfaceY = world.getTerrainHeight(testX, testZ);
+                                } else if (typeof world.getGroundHeight === 'function') {
+                                    surfaceY = world.getGroundHeight(testX, testZ);
+                                }
+
+                                player.position.set(testX + 0.5, surfaceY + 2, testZ + 0.5);
+                                player.velocity.set(0, 0, 0);
+                                world.updateChunks(testX, testZ, true);
+
+                                addChatMessage(`Téléporté au biome "${targetBiomeName}" en [${testX}, ${surfaceY + 2}, ${testZ}]`, '#55ff55');
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found) break;
+                    }
+                    if (found) break;
+                }
+
+                if (!found) {
+                    addChatMessage(`Biome "${targetBiomeName}" introuvable dans un rayon de ${maxRadius} blocs.`, '#ff5555');
+                }
+                return;
+            }
+
+            addChatMessage('Commande inconnue. Essayez "list biomes" ou "TP biome <nom>".', '#ff5555');
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 't' || e.key === 'T') {
+                if (!isChatOpen && player.controls && player.controls.isLocked) {
+                    e.preventDefault();
+                    openChat();
+                }
+            } else if (e.key === 'Enter') {
+                if (isChatOpen) {
+                    executeCommand(chatInput.value);
+                    closeChat();
+                }
+            } else if (e.key === 'Escape') {
+                if (isChatOpen) {
+                    closeChat();
+                }
+            }
+        });
+
         // --- 3. GÉNÉRATION DU MONDE DE DÉPART ---
         const preRadius = Math.min(world.renderDistance, 2);
         await world.preload(0, 0, preRadius, (p) => setStatus('Génération du terrain... ' + Math.round(p * 100) + '%'));
@@ -107,11 +288,12 @@
             });
             player.controls.addEventListener('unlock', () => {
                 mouseHeld = -1;
-                if (pauseOverlay && !player.inventory.isOpen) pauseOverlay.style.display = 'flex';
+                // Si le chat est ouvert, on n'affiche pas le menu pause
+                if (pauseOverlay && !player.inventory.isOpen && !isChatOpen) pauseOverlay.style.display = 'flex';
             });
         }
         window.addEventListener('inventory-toggle', (e) => {
-            if (!e.detail.open && player.controls) player.controls.lock();
+            if (!e.detail.open && player.controls && !isChatOpen) player.controls.lock();
         });
 
         // --- 5. INTERACTION AVEC LES BLOCS ---
@@ -174,7 +356,7 @@
 
         let lastRepeat = 0;
         window.addEventListener('mousedown', (e) => {
-            if (!player.controls || !player.controls.isLocked || isWorldLoading) return;
+            if (!player.controls || !player.controls.isLocked || isWorldLoading || isChatOpen) return;
             if (e.button !== 0 && e.button !== 2) return;
             mouseHeld = e.button;
             lastRepeat = performance.now();
@@ -236,7 +418,7 @@
             }
 
             const locked = player.controls && player.controls.isLocked;
-            if (locked && updateTarget()) {
+            if (locked && !isChatOpen && updateTarget()) {
                 selBox.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);
                 selBox.visible = true;
                 if (mouseHeld !== -1 && now - lastRepeat > 220) {

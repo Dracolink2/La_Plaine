@@ -117,3 +117,18 @@ blockRegistry.register({
     lightLevel: 8, // Émet un peu de lumière
     emitColor: 0xff4444
 });
+blockRegistry.register({ id: 22, name: 'Fleur Nyamée', textures: { all: '/static/textures/Fleur-Nyamée.png' }, transparent: true, alphaTest: 0.5, isPlant: true });
+// Feuilles d'automne (ID 23)
+blockRegistry.register({
+    id: 23,
+    name: 'Feuilles de Sapin',
+    textures: { all: '/static/textures/automne_leaves.png' },
+    transparent: true,
+    alphaTest: 0.5
+});
+blockRegistry.register({ id: 24, name: 'Feuilles_Nyamée', textures: { all: '/static/textures/Nyamée_leaves.png' }, transparent: true, alphaTest: 0.5 });
+blockRegistry.register({ id: 25, name: 'Bois_Nyamée', textures: { top: '/static/textures/Nyamée_top.png', bottom: '/static/textures/Nyamée_top.png', sides: '/static/textures/Nyamée_side.png' }, transparent: false });
+blockRegistry.register({ id: 26, name: 'Herbe_Nyamée', textures: { top: '/static/textures/grass_top_Nyamée.png', bottom: '/static/textures/dirt.png', sides: '/static/textures/grass_side_Nyamée.png' }, transparent: false });
+blockRegistry.register({ id: 27, name: 'Feuilles_savane', textures: { all: '/static/textures/acacia_leaves.png' }, transparent: true, alphaTest: 0.5 });
+blockRegistry.register({ id: 28, name: 'Bois_savane', textures: { top: '/static/textures/acacia_top.png', bottom: '/static/textures/acacia_top.png', sides: '/static/textures/acacia_side.png' }, transparent: false });
+blockRegistry.register({ id: 29, name: 'Herbe_Nyamée', textures: { top: '/static/textures/grass_top_hot.png', bottom: '/static/textures/dirt.png', sides: '/static/textures/grass_side_hot.png' }, transparent: false });

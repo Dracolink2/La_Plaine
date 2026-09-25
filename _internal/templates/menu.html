@@ -72,6 +72,30 @@
                 </label>
             </div>
 
+            <div class="setting-item">
+                <label for="vignette-toggle-menu">
+                    <input type="checkbox" id="vignette-toggle-menu" checked> Vignette rouge de dégâts
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <label for="bob-toggle-menu">
+                    <input type="checkbox" id="bob-toggle-menu" checked> Balancement de caméra (marche)
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <label for="fireflies-toggle-menu">
+                    <input type="checkbox" id="fireflies-toggle-menu" checked> Lucioles nocturnes
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <label for="shaders-toggle-menu">
+                    <input type="checkbox" id="shaders-toggle-menu" checked> Shaders (blocs & biomes)
+                </label>
+            </div>
+
             <hr class="divider">
             <h3>Réglages Audio</h3>
 
@@ -200,6 +224,27 @@
 
         waterShaderToggleMenu.addEventListener('change', (e) => {
             localStorage.setItem('fxWaterShader', e.target.checked);
+        });
+
+        // Nouveaux toggles visuels (dégâts / bob caméra / lucioles)
+        const vignetteToggleMenu = document.getElementById('vignette-toggle-menu');
+        const bobToggleMenu = document.getElementById('bob-toggle-menu');
+        const firefliesToggleMenu = document.getElementById('fireflies-toggle-menu');
+
+        vignetteToggleMenu.checked = localStorage.getItem('fxDamageVignette') !== 'false';
+        vignetteToggleMenu.addEventListener('change', (e) => localStorage.setItem('fxDamageVignette', e.target.checked));
+
+        bobToggleMenu.checked = localStorage.getItem('fxCameraBob') !== 'false';
+        bobToggleMenu.addEventListener('change', (e) => localStorage.setItem('fxCameraBob', e.target.checked));
+
+        firefliesToggleMenu.checked = localStorage.getItem('fxFireflies') !== 'false';
+        firefliesToggleMenu.addEventListener('change', (e) => localStorage.setItem('fxFireflies', e.target.checked));
+
+        const shadersToggleMenu = document.getElementById('shaders-toggle-menu');
+        shadersToggleMenu.checked = localStorage.getItem('fxShaders') !== 'false';
+        shadersToggleMenu.addEventListener('change', (e) => {
+            if (window.shaderRegistry) window.shaderRegistry.setEnabled(e.target.checked);
+            else localStorage.setItem('fxShaders', e.target.checked);
         });
 
         btnSettings.addEventListener('click', () => {

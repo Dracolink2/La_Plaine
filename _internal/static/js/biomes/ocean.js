@@ -1,15 +1,13 @@
 biomeRegistry.register({
     id: 'ocean',
     name: 'Océan',
-    surfaceBlock: 9,    // Sable au fond
-    subSurfaceBlock: 9, // Sable
-    stoneBlock: 1,      // Pierre
+    surfaceBlock: 9,
+    subSurfaceBlock: 9,
+    stoneBlock: 1,
 
-    baseHeight: 6,
-    elevationScale: 4,
+    baseHeight: 8,        // Creuse progressivement sous le niveau de la mer (Y=12)
+    elevationScale: 3,
     detailScale: 1,
 
-    generateDecorations: function(world, x, surfaceY, z, perlin) {
-        // Le niveau de la mer remplira automatiquement d'eau jusqu'à Y=16-18 dans la boucle du monde
-    }
+    generateDecorations: function(world, x, surfaceY, z, perlin) {}
 });

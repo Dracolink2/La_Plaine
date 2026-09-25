@@ -60,6 +60,12 @@
         </div>
     </div>
 
+    <div id="damage-vignette"></div>
+    <div id="death-overlay" style="display:none;">
+        <h2>Vous êtes mort</h2>
+        <p id="death-cause"></p>
+    </div>
+
     <div id="crosshair"></div>
 
     <div id="fps-counter">FPS: <span id="fps-val">0</span></div>
@@ -111,6 +117,27 @@
             </label>
         </div>
 
+        <div style="margin-bottom: 15px; color: white;">
+            <label for="vignette-toggle-game" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="vignette-toggle-game" checked style="cursor: pointer; width: 18px; height: 18px;">
+                Vignette rouge de dégâts
+            </label>
+        </div>
+
+        <div style="margin-bottom: 15px; color: white;">
+            <label for="bob-toggle-game" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="bob-toggle-game" checked style="cursor: pointer; width: 18px; height: 18px;">
+                Balancement de caméra (marche)
+            </label>
+        </div>
+
+        <div style="margin-bottom: 15px; color: white;">
+            <label for="fireflies-toggle-game" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="fireflies-toggle-game" checked style="cursor: pointer; width: 18px; height: 18px;">
+                Lucioles nocturnes
+            </label>
+        </div>
+
         <button id="btn-resume" class="btn-pause">Reprendre</button>
         <a href="/" class="btn-pause">Menu Principal</a>
     </div>
@@ -119,6 +146,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+
+    <!-- Registre de shaders (doit être chargé avant les blocs/biomes qui l'utilisent) -->
+    <script src="/static/js/shaders/register.js"></script>
 
     <!-- Registres de base -->
     <script src="/static/js/blocks/register.js"></script>

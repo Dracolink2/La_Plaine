@@ -193,7 +193,12 @@ class Player {
         this.canJump = false;
         this.spaceHeld = false;
 
-        this.speed = 4.3;
+        // --- GESTION DE LA VITESSE ET SPRINT ---
+        this.walkSpeed = 4.3;
+        this.sprintSpeed = 7.5;
+        this.speed = this.walkSpeed;
+        this.isSprinting = false;
+
         this.jumpForce = 8.5;
         this.gravity = 28.0;
 
@@ -335,6 +340,10 @@ class Player {
             if (this.inventory.isOpen) return;
 
             switch (event.code) {
+                case 'ShiftLeft':
+                case 'ShiftRight':
+                    this.isSprinting = true;
+                    break;
                 case 'KeyW': case 'KeyZ': this.moveForward = true; break;
                 case 'KeyA': case 'KeyQ': this.moveLeft = true; break;
                 case 'KeyS': this.moveBackward = true; break;
@@ -366,6 +375,10 @@ class Player {
 
         const onKeyUp = (event) => {
             switch (event.code) {
+                case 'ShiftLeft':
+                case 'ShiftRight':
+                    this.isSprinting = false;
+                    break;
                 case 'KeyW': case 'KeyZ': this.moveForward = false; break;
                 case 'KeyA': case 'KeyQ': this.moveLeft = false; break;
                 case 'KeyS': this.moveBackward = false; break;
@@ -375,7 +388,7 @@ class Player {
         };
 
         this.controls?.addEventListener('unlock', () => {
-            this.moveForward = this.moveBackward = this.moveLeft = this.moveRight = this.spaceHeld = false;
+            this.moveForward = this.moveBackward = this.moveLeft = this.moveRight = this.spaceHeld = this.isSprinting = false;
         });
 
         window.addEventListener('wheel', (event) => {
@@ -399,13 +412,22 @@ class Player {
 
         if (nowOpen) {
             if (this.controls?.isLocked) this.controls.unlock();
-            this.moveForward = this.moveBackward = this.moveLeft = this.moveRight = false;
+            this.moveForward = this.moveBackward = this.moveLeft = this.moveRight = this.isSprinting = false;
         }
     }
 
     toggleCameraMode() {
         this.cameraMode = (this.cameraMode + 1) % 3;
-        this.playerGroup.visible = (this.cameraMode !== 0);
+        if (this.playerGroup) this.playerGroup.visible = (this.cameraMode !== 0);
+
+        // PointerLockControls (yawObject -> pitchObject -> camera) gère déjà le pitch via la souris.
+        // En mode "vue face" on tourne directement la caméra pour regarder le joueur ; en sortant
+        // de ce mode il faut annuler cette rotation locale, sinon elle s'additionne à celle de la
+        // souris (double rotation) et la vue reste cassée même en 1re personne / vue arrière.
+        if (this.cameraMode !== 2) {
+            this.camera.rotation.set(0, 0, 0);
+            this.camera.quaternion.identity();
+        }
     }
 
     testCollision(posX, posY, posZ) {
@@ -436,31 +458,42 @@ class Player {
     updateCameraPosition() {
         this.pivot.set(this.position.x, this.position.y + this.eyeHeight, this.position.z);
 
+        // Direction de regard "brute" (souris), capturée AVANT toute manipulation de caméra :
+        // c'est celle-ci qui doit orienter le modèle du joueur, jamais la direction recalculée
+        // après un éventuel lookAt (sinon le personnage se retourne face à la caméra en mode 2).
+        this.camera.getWorldDirection(this.lookDir);
+
         if (this.cameraMode === 0) {
             this.controls?.getObject().position.copy(this.pivot);
         } else {
-            this.camera.getWorldDirection(this.lookDir);
-
             this.pivot.y += 0.2;
-            
+
             const dirFactor = (this.cameraMode === 1) ? -1 : 1;
             this.desiredPos.copy(this.pivot).addScaledVector(this.lookDir, dirFactor * this.thirdPersonDistance);
-            
+
             const finalPos = this.raycastCameraCollision(this.pivot, this.desiredPos);
             this.controls?.getObject().position.copy(finalPos);
-            
+
             if (this.cameraMode === 2) {
-                this.controls?.getObject().lookAt(this.pivot);
+                // Important : on tourne la vraie caméra (feuille de la hiérarchie), pas le
+                // yawObject renvoyé par getObject(). THREE.Object3D.lookAt() compense
+                // automatiquement la rotation des parents (yaw + pitch de la souris), donc
+                // l'orientation finale de la caméra est correcte sans double rotation.
+                this.camera.lookAt(this.pivot);
+            } else {
+                this.camera.rotation.set(0, 0, 0);
+                this.camera.quaternion.identity();
             }
         }
 
         this.playerGroup.position.copy(this.position);
 
-        this.camera.getWorldDirection(this.lookDir);
-        this.lookDir.y = 0;
-        if (this.lookDir.lengthSq() > 0) {
-            this.lookDir.normalize();
-            this.playerGroup.rotation.y = Math.atan2(this.lookDir.x, this.lookDir.z);
+        const flat = this.tempFlatDir || (this.tempFlatDir = new THREE.Vector3());
+        flat.copy(this.lookDir);
+        flat.y = 0;
+        if (flat.lengthSq() > 0) {
+            flat.normalize();
+            this.playerGroup.rotation.y = Math.atan2(flat.x, flat.z);
         }
     }
 
@@ -470,7 +503,8 @@ class Player {
         const fullDist = from.distanceTo(to);
         if (fullDist < 0.001) return to;
 
-        const dir = this.desiredPos.copy(to).sub(from).normalize();
+        this._camDir = this._camDir || new THREE.Vector3();
+        const dir = this._camDir.copy(to).sub(from).normalize();
         const step = 0.1;
         const margin = 0.25;
 
@@ -496,6 +530,13 @@ class Player {
         if (!this.isReady) return;
 
         const dt = Math.min(delta, 0.05);
+
+        // Application de la vitesse selon le sprint (uniquement en avançant)
+        if (this.isSprinting && this.moveForward) {
+            this.speed = this.sprintSpeed;
+        } else {
+            this.speed = this.walkSpeed;
+        }
 
         this.forward.set(0, 0, 0);
         if (this.controls?.isLocked && !this.inventory.isOpen) {
@@ -573,7 +614,8 @@ class Player {
 
         if ((Math.abs(this.velocity.x) > 0 || Math.abs(this.velocity.z) > 0) && this.canJump) {
             this.stepTimer += dt;
-            if (this.stepTimer > 0.35) {
+            const stepInterval = (this.isSprinting && this.moveForward) ? 0.22 : 0.35;
+            if (this.stepTimer > stepInterval) {
                 if (typeof soundManager !== 'undefined' && soundManager?.playStep) {
                     const blockUnderId = this.world.getBlock(
                         Math.floor(this.position.x),

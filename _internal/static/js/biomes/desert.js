@@ -1,16 +1,15 @@
 biomeRegistry.register({
     id: 'desert',
     name: 'Désert',
-    surfaceBlock: 9,    // Sable
-    subSurfaceBlock: 9, // Sable
-    stoneBlock: 1,      // Pierre
+    surfaceBlock: 9,
+    subSurfaceBlock: 9,
+    stoneBlock: 1,
 
     baseHeight: 16,
-    elevationScale: 6,
-    detailScale: 4,
+    elevationScale: 5,
+    detailScale: 2,
 
     generateDecorations: function(world, x, surfaceY, z, perlin) {
-        // Génération de Cactus
         const cactusNoise = perlin.noise(x * 0.2, z * 0.2);
         if (cactusNoise > 0.52 && (x * 3 + z * 7) % 19 === 0) {
             const height = 2 + Math.floor(Math.abs(perlin.noise(x, z)) * 2);

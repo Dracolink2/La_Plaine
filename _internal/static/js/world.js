@@ -153,6 +153,20 @@ class World {
         this._lastF = -1;
 
         this.fogNear = 20; this.fogFar = 44;
+
+        // --- Ambiance de biome (brouillard/teinte spécifiques, activable/désactivable) ---
+        this.shadersEnabled = localStorage.getItem('fxShaders') !== 'false';
+        this.currentBiomeId = null;
+        this._ambTint = new THREE.Color(1, 1, 1);       // teinte lumière appliquée actuellement (lissée)
+        this._ambTintTarget = new THREE.Color(1, 1, 1);
+        this._ambFogMul = 1;                             // multiplicateur de densité de brouillard (lissé)
+        this._ambFogMulTarget = 1;
+        this._ambCheckTimer = 0;
+        window.addEventListener('shaders-toggled', (e) => {
+            this.shadersEnabled = e.detail.enabled;
+            if (!this.shadersEnabled) { this._ambTintTarget.set(1, 1, 1); this._ambFogMulTarget = 1; }
+        });
+
         this.initSkyAndClouds();
         this.setCloudsVisible(localStorage.getItem('showClouds') !== 'false');
         this.applyFog();
@@ -465,20 +479,46 @@ class World {
         }
         const f = 0.3 + 0.7 * light;
 
+        // --- Ambiance de biome : détection (peu coûteuse, throttle à ~3x/s) + lissage ---
+        if (this.shadersEnabled && center) {
+            this._ambCheckTimer += delta;
+            if (this._ambCheckTimer > 0.3) {
+                this._ambCheckTimer = 0;
+                this._updateBiomeAmbianceTarget(Math.floor(center.x), Math.floor(center.z));
+            }
+            const lerpSpeed = Math.min(1, delta * 0.8); // transition douce (~1.5s)
+            this._ambTint.lerp(this._ambTintTarget, lerpSpeed);
+            this._ambFogMul += (this._ambFogMulTarget - this._ambFogMul) * lerpSpeed;
+        }
+
+        // Teinte de biome appliquée sur la couleur du ciel/lumière ambiante
+        const t = this._ambTint;
+        const litF = f; // luminosité jour/nuit, appliquée en plus de la teinte
         let bg = sky;
         if (this.underwater) {
             this._bg.copy(this._under).multiplyScalar(f);
             bg = this._bg;
+        } else if (this.shadersEnabled && (t.r !== 1 || t.g !== 1 || t.b !== 1)) {
+            this._bg.copy(sky).multiply(t);
+            bg = this._bg;
         }
         this.scene.background = bg;
-        if (this.scene.fog) this.scene.fog.color.copy(bg);
+        if (this.scene.fog) {
+            this.scene.fog.color.copy(bg);
+            // Le biome ne peut que DENSIFIER le brouillard (mul <= 1), jamais révéler des chunks
+            // non générés au-delà de la distance d'affichage réglée par le joueur.
+            const mul = this.shadersEnabled ? Math.min(1, this._ambFogMul) : 1;
+            this.scene.fog.near = (this.underwater ? 0.5 : this.fogNear) * mul;
+            this.scene.fog.far = (this.underwater ? 18 : this.fogFar) * mul;
+        }
 
-        if (Math.abs(f - this._lastF) > 0.003 && this.mats) {
+        const lf = litF * t.r; // luminosité effective des blocs = jour/nuit * teinte biome
+        if ((Math.abs(f - this._lastF) > 0.003 || this.shadersEnabled) && this.mats) {
             this._lastF = f;
-            this.mats.opaque.color.setRGB(f, f, f);
-            this.mats.cutout.color.setRGB(f, f, f);
-            this.mats.waterSimple.color.setRGB(f, f, f);
-            this.mats.waterShader.uniforms.uLight.value = f;
+            this.mats.opaque.color.setRGB(litF * t.r, litF * t.g, litF * t.b);
+            this.mats.cutout.color.setRGB(litF * t.r, litF * t.g, litF * t.b);
+            this.mats.waterSimple.color.setRGB(litF * t.r, litF * t.g, litF * t.b);
+            this.mats.waterShader.uniforms.uLight.value = lf;
             this.cloudMat.color.setRGB(f, f, f);
         }
         if (this.mats) this.mats.waterShader.uniforms.uTime.value = this.clock.elapsed;
@@ -488,6 +528,26 @@ class World {
             this.sunMesh.position.set(center.x + cosA * d, sinA * d, center.z);
             this.moonMesh.position.set(center.x - cosA * d, -sinA * d, center.z);
             if (this.cloudMesh.visible) this._updateClouds(center.x, center.z);
+        }
+    }
+
+    // Interroge le biome à la position du joueur et met à jour la CIBLE d'ambiance
+    // (le lissage vers cette cible se fait dans updateDayNightCycle).
+    // Un biome n'a rien à faire de particulier : il suffit de ne pas déclarer `ambiance`.
+    _updateBiomeAmbianceTarget(x, z) {
+        if (typeof biomeRegistry === 'undefined') return;
+        const biome = biomeRegistry.getBiomeAt(x, z, this.perlin);
+        const id = biome ? biome.id : null;
+        if (id === this.currentBiomeId) return;
+        this.currentBiomeId = id;
+
+        const amb = biome && biome.ambiance;
+        if (amb) {
+            this._ambTintTarget.set(amb.tint !== undefined ? amb.tint : 0xffffff);
+            this._ambFogMulTarget = amb.fogDensity !== undefined ? amb.fogDensity : 1;
+        } else {
+            this._ambTintTarget.set(0xffffff);
+            this._ambFogMulTarget = 1;
         }
     }
 

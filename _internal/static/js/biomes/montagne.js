@@ -1,21 +1,18 @@
 biomeRegistry.register({
     id: 'montagne',
     name: 'Montagne',
-    surfaceBlock: 17,   // Deepslate apparente par défaut
-    subSurfaceBlock: 17,// Deepslate
-    stoneBlock: 17,     // Deepslate
+    surfaceBlock: 17,
+    subSurfaceBlock: 17,
+    stoneBlock: 17,
 
-    baseHeight: 32,
-    elevationScale: 28,
-    detailScale: 6,
+    baseHeight: 24,       // Baissé pour lisser la transition avec les plaines
+    elevationScale: 20,   // Garde un haut relief progressif
+    detailScale: 5,
 
     generateDecorations: function(world, x, surfaceY, z, perlin) {
-        // Au-dessus d'une certaine altitude (ex: Y >= 48), on pose une couche de neige (ID 12)
-        if (surfaceY >= 48) {
+        if (surfaceY >= 38) {
             world.setBlock(x, surfaceY, z, 12);
-            
-            // Si la montagne est très haute (Y >= 52), on ajoute une deuxième couche pour faire du relief
-            if (surfaceY >= 52 && world.getBlock(x, surfaceY + 1, z) === 0) {
+            if (surfaceY >= 42 && world.getBlock(x, surfaceY + 1, z) === 0) {
                 world.setBlock(x, surfaceY + 1, z, 12);
             }
         }
