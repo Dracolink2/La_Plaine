@@ -1,13 +1,5 @@
 # La_Plaine
-La Plaine est un jeu que je fait avec un ami , dans un style qui ressemble à Minecraft , le jeu contient des versions pour les versions ( des étapes) et beaucoup de changement ( de techniques et de structures) sont prévus tout au long du projet ( notamment quelques switch au niveau du langage de programmation )
-La version actuelle est indiqué dans le nom du jeu , si vous voulez jouer à une ancienne version , regarder les autres registres.
-Je tient à dire que , même si je laisse tout en open source , je déconseille beaucoup d'utiliser mes assets.
-rappel du système de version :
-le premier 0. c'est pour la version du jeu
-le deuxième 0. c'est pour la sous-version 
-le troisième 0. c'est pour les petite correction de bugs
-et le dernier 0 c'est pour les changements de textures et sons 
-Attention : je ne met pas toujours à jour la version EXE du jeu 
-Attention : je ne dit pas que le jeu est bien , c'est surtout juste un projet fun pour moi et mon ami 
-
-Ceci est la version EXE du jeu , elle ne seras pas trop update
+La Plaine est un jeu que je fait avec un ami 
+Merci à une amie dans le classe de mon coéquipier pour l'idée du Biome de Nyamée ( même si ni lui ni moi on sait d'où sa viens )
+Cette version est la version EXE du jeu 
+Je tient à préciser que je ne mettrait pas toujours à jour cette version direct et qu'il y'a de très grand risques que je ne fasse pas une branche par version 
