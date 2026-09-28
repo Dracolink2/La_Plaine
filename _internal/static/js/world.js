@@ -156,6 +156,8 @@ class World {
 
         // --- Ambiance de biome (brouillard/teinte spécifiques, activable/désactivable) ---
         this.shadersEnabled = localStorage.getItem('fxShaders') !== 'false';
+        // Registre de biomes actif : commutable via dimensionRegistry.switchTo() pour changer de dimension
+        this.biomeRegistry = (typeof biomeRegistry !== 'undefined') ? biomeRegistry : null;
         this.currentBiomeId = null;
         this._ambTint = new THREE.Color(1, 1, 1);       // teinte lumière appliquée actuellement (lissée)
         this._ambTintTarget = new THREE.Color(1, 1, 1);
@@ -535,8 +537,8 @@ class World {
     // (le lissage vers cette cible se fait dans updateDayNightCycle).
     // Un biome n'a rien à faire de particulier : il suffit de ne pas déclarer `ambiance`.
     _updateBiomeAmbianceTarget(x, z) {
-        if (typeof biomeRegistry === 'undefined') return;
-        const biome = biomeRegistry.getBiomeAt(x, z, this.perlin);
+        if (!this.biomeRegistry) return;
+        const biome = this.biomeRegistry.getBiomeAt(x, z, this.perlin);
         const id = biome ? biome.id : null;
         if (id === this.currentBiomeId) return;
         this.currentBiomeId = id;
@@ -625,8 +627,8 @@ class World {
         x = Math.floor(x); z = Math.floor(z);
         const chunk = this.dataChunks.get(this.getChunkKey(x >> 4, z >> 4));
         if (chunk && chunk.heights) return chunk.heights[((z & 15) << 4) | (x & 15)];
-        if (typeof biomeRegistry === 'undefined') return 10;
-        return this._computeHeight(biomeRegistry.getBiomeAt(x, z, this.perlin), x, z);
+        if (!this.biomeRegistry) return 10;
+        return this._computeHeight(this.biomeRegistry.getBiomeAt(x, z, this.perlin), x, z);
     }
 
     spawnTree(x, startY, z) {
@@ -659,7 +661,7 @@ class World {
         if (chunk.generated) return;
         chunk.generated = true;
 
-        if (typeof biomeRegistry === 'undefined') return;
+        if (!this.biomeRegistry) return;
 
         this.generating = true;
         const B = chunk.blocks;
@@ -672,7 +674,7 @@ class World {
         for (let lz = 0; lz < 16; lz++) {
             for (let lx = 0; lx < 16; lx++) {
                 const x = startX + lx, z = startZ + lz;
-                const biome = biomeRegistry.getBiomeAt(x, z, this.perlin);
+                const biome = this.biomeRegistry.getBiomeAt(x, z, this.perlin);
                 const h = this._computeHeight(biome, x, z);
                 heights[(lz << 4) | lx] = h;
 
@@ -696,7 +698,7 @@ class World {
             for (let z = startZ + 2; z < startZ + 14; z++) {
                 const surfaceY = heights[((z - startZ) << 4) | (x - startX)];
                 if (surfaceY > sea) {
-                    biomeRegistry.getBiomeAt(x, z, this.perlin).generateDecorations(this, x, surfaceY, z, this.perlin);
+                    this.biomeRegistry.getBiomeAt(x, z, this.perlin).generateDecorations(this, x, surfaceY, z, this.perlin);
                 }
             }
         }

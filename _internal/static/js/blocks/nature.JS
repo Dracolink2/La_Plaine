@@ -132,3 +132,24 @@ blockRegistry.register({ id: 26, name: 'Herbe_Nyamée', textures: { top: '/stati
 blockRegistry.register({ id: 27, name: 'Feuilles_savane', textures: { all: '/static/textures/acacia_leaves.png' }, transparent: true, alphaTest: 0.5 });
 blockRegistry.register({ id: 28, name: 'Bois_savane', textures: { top: '/static/textures/acacia_top.png', bottom: '/static/textures/acacia_top.png', sides: '/static/textures/acacia_side.png' }, transparent: false });
 blockRegistry.register({ id: 29, name: 'Herbe_Nyamée', textures: { top: '/static/textures/grass_top_hot.png', bottom: '/static/textures/dirt.png', sides: '/static/textures/grass_side_hot.png' }, transparent: false });
+// static/js/blocks/portal.js
+// Bloc de cadre : à poser en rectangle plein (intérieur vide) pour activer un portail.
+blockRegistry.register({
+    id: 240,
+    name: 'Bloc de Portail',
+    textures: { all: '/static/textures/portal.png' }, // remplace par une texture dédiée si tu en crées une
+    transparent: false
+});
+
+// Bloc généré automatiquement au centre d'un cadre complet : marcher dedans téléporte.
+// isPlant:true => pas solide (traversable) et pas de logique de fluide/écoulement.
+blockRegistry.register({
+    id: 241,
+    name: 'Portail',
+    textures: { all: '/static/textures/portal_cadre.png' }, // texture provisoire, remplace-la si tu veux un effet dédié
+    transparent: true,
+    alphaTest: 0.1,
+    isPlant: true,
+    lightLevel: 12,
+    emitColor: 0x9b30ff
+});

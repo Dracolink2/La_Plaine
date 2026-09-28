@@ -49,6 +49,7 @@
         // --- 2. MONDE, PARTICULES ET JOUEUR ---
         setStatus('Chargement des textures...');
         const world = new World(scene);
+        if (window.dimensionRegistry) window.dimensionRegistry.setInitialDimension(world, 'overworld');
         await world.init(setStatus);
 
         const particleManager = new ParticleManager(scene, world);
@@ -346,6 +347,11 @@
             if (!type) return;
             world.addBlock({ x: px, y: py, z: pz }, type);
             if (window.soundManager) window.soundManager.playBlockPlace(type);
+
+            // Si on vient de poser un bloc de portail, on regarde si un cadre complet vient de se former
+            if (window.dimensionRegistry && type === window.dimensionRegistry.PORTAL_FRAME_ID) {
+                window.dimensionRegistry.tryActivatePortal(world, px, py, pz);
+            }
         }
 
         function interact(button) {
@@ -411,6 +417,8 @@
             player.update(delta);
             particleManager.update(delta);
             world.updateFluids(now);
+
+            if (window.dimensionRegistry) window.dimensionRegistry.checkPlayerInPortal(world, player, now);
 
             if (now - lastChunkUpdate > 250) {
                 world.updateChunks(player.position.x, player.position.z);

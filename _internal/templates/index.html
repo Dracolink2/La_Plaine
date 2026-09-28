@@ -150,9 +150,12 @@
     <!-- Registre de shaders (doit être chargé avant les blocs/biomes qui l'utilisent) -->
     <script src="/static/js/shaders/register.js"></script>
 
-    <!-- Registres de base -->
+    <!-- Registre de blocs (global, partagé par toutes les dimensions) -->
     <script src="/static/js/blocks/register.js"></script>
-    <script src="/static/js/biomes/register.js"></script>
+
+    <!-- Registre de dimensions + génération de portails dans les biomes (avant les biomes de chaque dimension) -->
+    <script src="/static/js/dimensions/register.js"></script>
+    <script src="/static/js/dimensions/portal-decoration.js"></script>
 
     <!-- Chargeur dynamique de modules (Plug & Play) -->
     <script>
@@ -169,7 +172,7 @@
         async function initPluginsAndEngine() {
             const loadingText = document.getElementById('loading-text');
             try {
-                if (loadingText) loadingText.textContent = "Détection des blocs et biomes...";
+                if (loadingText) loadingText.textContent = "Détection des blocs et dimensions...";
                 const res = await fetch('/api/modules');
                 const modules = await res.json();
 
@@ -178,9 +181,16 @@
                     await loadScript(`/static/js/blocks/${file}`);
                 }
 
-                // Charger tous les biomes trouvés dans static/js/biomes/
-                for (const file of modules.biomes) {
-                    await loadScript(`/static/js/biomes/${file}`);
+                // Charger chaque dimension : son propre registre de biomes, ses biomes, puis son access.js
+                // (access.js lit window.biomeRegistry — qui vient d'être créé pour CETTE dimension — et
+                //  termine l'enregistrement via dimensionRegistry.register(...))
+                for (const dim of modules.dimensions) {
+                    const base = `/static/js/dimensions/${dim.id}`;
+                    await loadScript(`${base}/biomes/register.js`); // crée un nouveau biomeRegistry propre à cette dimension
+                    for (const file of dim.biomes) {
+                        await loadScript(`${base}/biomes/${file}`);
+                    }
+                    await loadScript(`${base}/access.js`);
                 }
 
                 if (loadingText) loadingText.textContent = "Initialisation du moteur de jeu...";
