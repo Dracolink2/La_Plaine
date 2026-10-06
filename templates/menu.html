@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Plaine V0.1.0.0 - Menu</title>
+    <title>La Plaine V0.2.0.0 - Menu</title>
     <link rel="stylesheet" href="/static/css/menu.css">
 </head>
 <body>
 
-    <!-- Fond d'écran animé -->
     <div id="bg-slideshow"></div>
 
     <div id="main-menu">
@@ -16,9 +15,52 @@
         <p class="subtitle">Un monde de blocs à explorer</p>
 
         <div class="menu-container">
-            <a href="/game" class="btn-menu primary">JOUER</a>
+            <button id="btn-play" class="btn-menu primary">JOUER</button>
             <button id="btn-settings" class="btn-menu">PARAMÈTRES</button>
             <button id="btn-controls" class="btn-menu">COMMANDES</button>
+        </div>
+
+        <!-- Sélection des mondes -->
+        <div id="worlds-modal" class="modal world-modal">
+            <div class="modal-header">
+                <h3>Sélection du monde</h3>
+                <button id="btn-close-worlds" class="modal-close">X</button>
+            </div>
+
+            <div id="world-list" class="world-list">
+                <div class="world-empty">Chargement des mondes...</div>
+            </div>
+
+            <div class="world-actions">
+                <button id="btn-new-world" class="btn-menu small">NOUVEAU MONDE</button>
+                <button id="btn-back-worlds" class="btn-menu small">RETOUR</button>
+            </div>
+        </div>
+
+        <!-- Création d'un monde -->
+        <div id="create-world-modal" class="modal world-modal">
+            <div class="modal-header">
+                <h3>Créer un monde</h3>
+                <button id="btn-close-create" class="modal-close">X</button>
+            </div>
+
+            <div class="setting-item">
+                <label for="world-name">Nom du monde :</label>
+                <input type="text" id="world-name" maxlength="64" placeholder="Mon nouveau monde">
+            </div>
+
+            <div class="setting-item">
+                <label for="world-seed">Seed :</label>
+                <input type="text" id="world-seed" maxlength="128" placeholder="Aléatoire">
+                <small>Laisse vide pour générer une seed aléatoire.</small>
+            </div>
+
+            <div id="create-world-error" class="world-error"></div>
+
+            <div class="world-actions">
+                <button id="btn-create-world" class="btn-menu small primary">CRÉER</button>
+                <button id="btn-cancel-create" class="btn-menu small">ANNULER</button>
+            </div>
         </div>
 
         <!-- Options / Paramètres -->
@@ -61,15 +103,22 @@
             <h3>Effets visuels</h3>
 
             <div class="setting-item">
-                <label for="cloud-toggle-menu">
-                    <input type="checkbox" id="cloud-toggle-menu" checked> Afficher les nuages 3D
-                </label>
+                <label><input type="checkbox" id="cloud-toggle-menu" checked> Afficher les nuages 3D</label>
             </div>
-
             <div class="setting-item">
-                <label for="water-shader-toggle-menu">
-                    <input type="checkbox" id="water-shader-toggle-menu" checked> Effet d'eau avancé (shader)
-                </label>
+                <label><input type="checkbox" id="water-shader-toggle-menu" checked> Effet d'eau avancé (shader)</label>
+            </div>
+            <div class="setting-item">
+                <label><input type="checkbox" id="vignette-toggle-menu" checked> Vignette rouge de dégâts</label>
+            </div>
+            <div class="setting-item">
+                <label><input type="checkbox" id="bob-toggle-menu" checked> Balancement de caméra (marche)</label>
+            </div>
+            <div class="setting-item">
+                <label><input type="checkbox" id="fireflies-toggle-menu" checked> Lucioles nocturnes</label>
+            </div>
+            <div class="setting-item">
+                <label><input type="checkbox" id="shaders-toggle-menu" checked> Shaders (blocs & biomes)</label>
             </div>
 
             <hr class="divider">
@@ -79,12 +128,10 @@
                 <label for="vol-master">Volume Général : <span id="vol-master-val">80%</span></label>
                 <input type="range" id="vol-master" min="0" max="100" value="80">
             </div>
-
             <div class="setting-item">
                 <label for="vol-music">Musique d'ambiance : <span id="vol-music-val">50%</span></label>
                 <input type="range" id="vol-music" min="0" max="100" value="50">
             </div>
-
             <div class="setting-item">
                 <label for="vol-sfx">Effets Sonores (SFX) : <span id="vol-sfx-val">80%</span></label>
                 <input type="range" id="vol-sfx" min="0" max="100" value="80">
@@ -107,22 +154,187 @@
         </div>
     </div>
 
-    <div class="version-tag">La Plaine · V0.1.0.0</div>
+    <div class="version-tag">La Plaine · V0.2.0.0</div>
 
     <script src="/static/js/sound.js"></script>
     <script>
+        const btnPlay = document.getElementById('btn-play');
         const btnSettings = document.getElementById('btn-settings');
         const btnControls = document.getElementById('btn-controls');
+
+        const worldsModal = document.getElementById('worlds-modal');
+        const createWorldModal = document.getElementById('create-world-modal');
         const settingsModal = document.getElementById('settings-modal');
         const controlsModal = document.getElementById('controls-modal');
-        const renderInput = document.getElementById('render-distance');
-        const renderVal = document.getElementById('render-val');
-        const resSelect = document.getElementById('resolution-select');
-        const fpsSelect = document.getElementById('fps-limit-select');
-        const cloudToggleMenu = document.getElementById('cloud-toggle-menu');
-        const waterShaderToggleMenu = document.getElementById('water-shader-toggle-menu');
 
-        // Réglages Audio
+        const worldList = document.getElementById('world-list');
+        const worldName = document.getElementById('world-name');
+        const worldSeed = document.getElementById('world-seed');
+        const createWorldError = document.getElementById('create-world-error');
+
+        const closeAllModals = () => {
+            worldsModal.style.display = 'none';
+            createWorldModal.style.display = 'none';
+            settingsModal.style.display = 'none';
+            controlsModal.style.display = 'none';
+        };
+
+        async function loadWorlds() {
+            worldList.innerHTML = '<div class="world-empty">Chargement des mondes...</div>';
+
+            try {
+                const response = await fetch('/api/worlds');
+                if (!response.ok) throw new Error('Impossible de charger les mondes.');
+
+                const data = await response.json();
+                const worlds = Array.isArray(data) ? data : (data.worlds || []);
+
+                if (!worlds.length) {
+                    worldList.innerHTML = '<div class="world-empty">Aucun monde créé.<br>Crée ton premier monde !</div>';
+                    return;
+                }
+
+                worldList.innerHTML = '';
+
+                worlds.forEach(world => {
+                    const item = document.createElement('div');
+                    item.className = 'world-item';
+
+                    const info = document.createElement('div');
+                    info.className = 'world-info';
+
+                    const name = document.createElement('div');
+                    name.className = 'world-name';
+                    name.textContent = world.name;
+
+                    const details = document.createElement('div');
+                    details.className = 'world-details';
+                    details.textContent = 'Seed : ' + world.seed;
+
+                    info.appendChild(name);
+                    info.appendChild(details);
+
+                    const actions = document.createElement('div');
+                    actions.className = 'world-item-actions';
+
+                    const play = document.createElement('button');
+                    play.className = 'world-button play-world';
+                    play.textContent = 'JOUER';
+                    play.addEventListener('click', () => {
+                        window.location.href = '/game?world=' + encodeURIComponent(world.id);
+                    });
+
+                    const remove = document.createElement('button');
+                    remove.className = 'world-button delete-world';
+                    remove.textContent = 'X';
+                    remove.title = 'Supprimer ce monde';
+                    remove.addEventListener('click', async () => {
+                        if (!confirm('Supprimer définitivement le monde "' + world.name + '" ?')) return;
+
+                        try {
+                            const response = await fetch('/api/worlds/' + world.id, {
+                                method: 'DELETE'
+                            });
+
+                            if (!response.ok) {
+                                throw new Error('Impossible de supprimer le monde.');
+                            }
+
+                            loadWorlds();
+                        } catch (error) {
+                            alert(error.message);
+                        }
+                    });
+
+                    actions.appendChild(play);
+                    actions.appendChild(remove);
+
+                    item.appendChild(info);
+                    item.appendChild(actions);
+                    worldList.appendChild(item);
+                });
+            } catch (error) {
+                worldList.innerHTML = '<div class="world-empty error">Erreur : ' + error.message + '</div>';
+            }
+        }
+
+        btnPlay.addEventListener('click', () => {
+            closeAllModals();
+            worldsModal.style.display = 'block';
+            loadWorlds();
+        });
+
+        document.getElementById('btn-close-worlds').addEventListener('click', closeAllModals);
+        document.getElementById('btn-back-worlds').addEventListener('click', closeAllModals);
+
+        document.getElementById('btn-new-world').addEventListener('click', () => {
+            worldName.value = '';
+            worldSeed.value = '';
+            createWorldError.textContent = '';
+            worldsModal.style.display = 'none';
+            createWorldModal.style.display = 'block';
+            worldName.focus();
+        });
+
+        document.getElementById('btn-close-create').addEventListener('click', () => {
+            createWorldModal.style.display = 'none';
+            worldsModal.style.display = 'block';
+        });
+
+        document.getElementById('btn-cancel-create').addEventListener('click', () => {
+            createWorldModal.style.display = 'none';
+            worldsModal.style.display = 'block';
+        });
+
+        document.getElementById('btn-create-world').addEventListener('click', async () => {
+            const name = worldName.value.trim();
+            const seed = worldSeed.value.trim();
+
+            if (!name) {
+                createWorldError.textContent = 'Donne un nom à ton monde.';
+                worldName.focus();
+                return;
+            }
+
+            createWorldError.textContent = '';
+
+            try {
+                const response = await fetch('/api/worlds', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        seed: seed === '' ? null : seed
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Impossible de créer le monde.');
+                }
+
+                window.location.href = '/game?world=' + encodeURIComponent(data.world.id);
+            } catch (error) {
+                createWorldError.textContent = error.message;
+            }
+        });
+
+        btnSettings.addEventListener('click', () => {
+            controlsModal.style.display = 'none';
+            worldsModal.style.display = 'none';
+            createWorldModal.style.display = 'none';
+            settingsModal.style.display = (settingsModal.style.display === 'block') ? 'none' : 'block';
+        });
+
+        btnControls.addEventListener('click', () => {
+            settingsModal.style.display = 'none';
+            worldsModal.style.display = 'none';
+            createWorldModal.style.display = 'none';
+            controlsModal.style.display = (controlsModal.style.display === 'block') ? 'none' : 'block';
+        });
+
+        // Réglages audio
         const volMasterInput = document.getElementById('vol-master');
         const volMusicInput = document.getElementById('vol-music');
         const volSfxInput = document.getElementById('vol-sfx');
@@ -131,88 +343,77 @@
         const volMusicVal = document.getElementById('vol-music-val');
         const volSfxVal = document.getElementById('vol-sfx-val');
 
-        // Charger et afficher les volumes
         volMasterInput.value = soundManager.masterVolume * 100;
         volMasterVal.textContent = Math.round(soundManager.masterVolume * 100) + '%';
-
         volMusicInput.value = soundManager.musicVolume * 100;
         volMusicVal.textContent = Math.round(soundManager.musicVolume * 100) + '%';
-
         volSfxInput.value = soundManager.sfxVolume * 100;
         volSfxVal.textContent = Math.round(soundManager.sfxVolume * 100) + '%';
 
-        volMasterInput.addEventListener('input', (e) => {
-            const val = e.target.value / 100;
+        volMasterInput.addEventListener('input', e => {
             volMasterVal.textContent = e.target.value + '%';
-            soundManager.setMasterVolume(val);
+            soundManager.setMasterVolume(e.target.value / 100);
         });
 
-        volMusicInput.addEventListener('input', (e) => {
-            const val = e.target.value / 100;
+        volMusicInput.addEventListener('input', e => {
             volMusicVal.textContent = e.target.value + '%';
-            soundManager.setMusicVolume(val);
+            soundManager.setMusicVolume(e.target.value / 100);
         });
 
-        volSfxInput.addEventListener('input', (e) => {
-            const val = e.target.value / 100;
+        volSfxInput.addEventListener('input', e => {
             volSfxVal.textContent = e.target.value + '%';
-            soundManager.setSfxVolume(val);
+            soundManager.setSfxVolume(e.target.value / 100);
         });
 
-        // Charger la distance d'affichage
+        // Réglages existants
+        const renderInput = document.getElementById('render-distance');
+        const renderVal = document.getElementById('render-val');
+        const resSelect = document.getElementById('resolution-select');
+        const fpsSelect = document.getElementById('fps-limit-select');
+        const cloudToggleMenu = document.getElementById('cloud-toggle-menu');
+        const waterShaderToggleMenu = document.getElementById('water-shader-toggle-menu');
+
         const savedDistance = localStorage.getItem('renderDistance') || 3;
         renderInput.value = savedDistance;
         renderVal.textContent = savedDistance;
-
-        renderInput.addEventListener('input', (e) => {
-            const val = e.target.value;
-            renderVal.textContent = val;
-            localStorage.setItem('renderDistance', val);
+        renderInput.addEventListener('input', e => {
+            renderVal.textContent = e.target.value;
+            localStorage.setItem('renderDistance', e.target.value);
         });
 
-        // Charger la limite de FPS
-        const savedFps = localStorage.getItem('fpsLimit') || 'max';
-        fpsSelect.value = savedFps;
+        fpsSelect.value = localStorage.getItem('fpsLimit') || 'max';
+        fpsSelect.addEventListener('change', e => localStorage.setItem('fpsLimit', e.target.value));
 
-        fpsSelect.addEventListener('change', (e) => {
-            localStorage.setItem('fpsLimit', e.target.value);
+        resSelect.value = localStorage.getItem('gameResolution') || 'auto';
+        resSelect.addEventListener('change', e => localStorage.setItem('gameResolution', e.target.value));
+
+        cloudToggleMenu.checked = localStorage.getItem('showClouds') !== 'false';
+        cloudToggleMenu.addEventListener('change', e => localStorage.setItem('showClouds', e.target.checked));
+
+        waterShaderToggleMenu.checked = localStorage.getItem('fxWaterShader') !== 'false';
+        waterShaderToggleMenu.addEventListener('change', e => localStorage.setItem('fxWaterShader', e.target.checked));
+
+        const vignetteToggleMenu = document.getElementById('vignette-toggle-menu');
+        const bobToggleMenu = document.getElementById('bob-toggle-menu');
+        const firefliesToggleMenu = document.getElementById('fireflies-toggle-menu');
+
+        vignetteToggleMenu.checked = localStorage.getItem('fxDamageVignette') !== 'false';
+        vignetteToggleMenu.addEventListener('change', e => localStorage.setItem('fxDamageVignette', e.target.checked));
+
+        bobToggleMenu.checked = localStorage.getItem('fxCameraBob') !== 'false';
+        bobToggleMenu.addEventListener('change', e => localStorage.setItem('fxCameraBob', e.target.checked));
+
+        firefliesToggleMenu.checked = localStorage.getItem('fxFireflies') !== 'false';
+        firefliesToggleMenu.addEventListener('change', e => localStorage.setItem('fxFireflies', e.target.checked));
+
+        const shadersToggleMenu = document.getElementById('shaders-toggle-menu');
+        shadersToggleMenu.checked = localStorage.getItem('fxShaders') !== 'false';
+        shadersToggleMenu.addEventListener('change', e => {
+            if (window.shaderRegistry) window.shaderRegistry.setEnabled(e.target.checked);
+            localStorage.setItem('fxShaders', e.target.checked);
         });
 
-        // Charger la résolution
-        const savedRes = localStorage.getItem('gameResolution') || 'auto';
-        resSelect.value = savedRes;
-
-        resSelect.addEventListener('change', (e) => {
-            localStorage.setItem('gameResolution', e.target.value);
-        });
-
-        // Charger l'état des nuages
-        const savedClouds = localStorage.getItem('showClouds') !== 'false';
-        cloudToggleMenu.checked = savedClouds;
-
-        cloudToggleMenu.addEventListener('change', (e) => {
-            localStorage.setItem('showClouds', e.target.checked);
-        });
-
-        // Charger l'état du shader d'eau
-        const savedWaterShader = localStorage.getItem('fxWaterShader') !== 'false';
-        waterShaderToggleMenu.checked = savedWaterShader;
-
-        waterShaderToggleMenu.addEventListener('change', (e) => {
-            localStorage.setItem('fxWaterShader', e.target.checked);
-        });
-
-        btnSettings.addEventListener('click', () => {
-            controlsModal.style.display = 'none';
-            settingsModal.style.display = (settingsModal.style.display === 'block') ? 'none' : 'block';
-        });
-
-        btnControls.addEventListener('click', () => {
-            settingsModal.style.display = 'none';
-            controlsModal.style.display = (controlsModal.style.display === 'block') ? 'none' : 'block';
-        });
-
-        // --- DIAPORAMA DES TEXTURES (FOND D'ÉCRAN) ---
+        // Fond d'écran
         const textures = [
             '/static/textures/dirt.png',
             '/static/textures/grass_side.png',
