@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Plaine V0.2.0.0 - In game</title>
+    <title>La Plaine V0.2.1.0 - En Jeu</title>
     <link rel="stylesheet" href="/static/css/game.css">
 
 <style>
@@ -284,6 +284,7 @@
                 );
             }
 
+
             for (const dim of modules.dimensions) {
                 const base =
                     `/static/js/dimensions/${dim.id}`;
@@ -307,6 +308,7 @@
                 loadingText.textContent =
                     "Initialisation du moteur de jeu...";
             }
+
 
             await loadScript(
                 '/static/js/generation.js'
@@ -348,6 +350,7 @@
             }
         }
     }
+
     initPluginsAndEngine();
 </script>
 
