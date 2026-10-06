@@ -13,3 +13,5 @@ La V0.2.0.0 auras quand même beaucoup d'autres updates , à commencer par la V0
 Il n'y auras pas forcement de V0.2.9.0 ou de V0.2.9.9 .
 Mais aussi , cette mise à jour est faite pour ajouter du vrai contenus à ce jeu , notamment des entités , une meilleure gestion des biomes , des meilleurs terrains , et peut être même des crafts et dimensions ( et celle là on vas l'update souvent comparée à une autre ) 
 En bref , je tient à remercier tout ceux qui nous supportent !
+
+Cette mise à jour ajoute notamment une facilité à ajouter du nouveau contenus , mais aussi une meilleur style graphique , et autres !
