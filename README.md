@@ -1,6 +1,5 @@
 # La Plaine 
-Cela est la version 0.2.1.0 , elle apporte une sauvegarde complète et améliorée dans un seul fichier .
-Cette update est légère , mais très importante pour la suite .
-La future update est sur l'ajout de structures , et là j'ai hate , on vas avoir beaucoup de fun à désigner chaque nouvelles structures !!!!!!!
-Nous pensons que les futures updates seront pour l'upgrade générale des textures , mais aussi l'upgrade générale des biomes , mais encore : l'ajout de pleins de biomes et structures !!!!! ( mais aussi de blocks bien sûr )
-Mais aussi ! , nous allons bientôt ajouter les crafts , en tout cas , c'est en phase de brainstorming avec l'équipe ( d'ailleurs je sais pas pourquoi je continue de nous appeler une équipe on est deux ) !!
+c'est y est : le V0.2.2.0 
+On a ajouté les structures , enfin , de quoi les mettre , bientôt les entités !!!
+Nous pensons que après la V0.2 , les mises à jours seront plus lente , mais plus grosses ( mises à jours plus espacées mais avec plus de contenus ) , après , je ne sais pas trop un truc : on avance pas un peu trop vite là ? , enfin , c'est juste la version 0.2 là , même pas la V1 , et on as déjà attends de choses là , et le projet à pris 1 ans à être fait , et encore , seulement 1 mois que je travail dessus d façon stable sans réinitialiser le projet .
+Merci encore pour tout le support !
