@@ -18,3 +18,4 @@ The Plains , de son nom français "Les Plaines" , c'est une autre versions , tou
 L'équipe avec laquelle je travail n'est pas grande , y'a moi , un pote , et j'utilise aussi un peu l'IA , mais moi et mon pote faisons la plupart du code , les textures c'est mon pote , et les sons aussi ( musiques et les sons en code) , il fait aussi les biomes et blocks , moi perso je gère la plupart du code , mais lui aussi bien sûr , on se repartit le travail , même si lui n'as pas autant de temps que moi pour coder .
 
 Je tient donc à remercier tout ceux qui supportent le projet , même si je les connais pas .
+Nous tenons aussi à dire que La Plaine est 100% gratuit et open source , au cas où c'était pas clair .
