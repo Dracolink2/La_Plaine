@@ -11,10 +11,20 @@ overworldBiomeRegistry.register({
 
     ambiance: { tint: 0xffffff, fogDensity: 1 },
 
-    generateDecorations(world, x, surfaceY, z, perlin) {
+    generateStructures(world, x, surfaceY, z) {
         if (typeof window.trySpawnPortalStructure === 'function' &&
-            window.trySpawnPortalStructure(world, x, surfaceY, z, perlin)) return;
+            window.trySpawnPortalStructure(world, x, surfaceY, z, world.perlin)) return;
 
+        const house = window.BiomeStructures?.petiteMaison;
+        if (window.Generation?.trySpawnStructure && house) {
+            window.Generation.trySpawnStructure(world, house, x, surfaceY, z, {
+                sameBiome: true,
+                biomeId: 'plaine'
+            });
+        }
+    },
+
+    generateDecorations(world, x, surfaceY, z, perlin) {
         if (world.getBlock(x, surfaceY + 1, z) !== 0) return;
 
         const treeNoise = perlin.noise(x * 0.08, z * 0.08);

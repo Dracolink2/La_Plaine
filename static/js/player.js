@@ -1,3 +1,5 @@
+// --- INVENTAIRE ---
+// 36 cases : 9 pour la hotbar (0-8), 27 pour le sac (9-35). Stack max : 100.
 const INVENTORY_SIZE = 36;
 const HOTBAR_SIZE = 9;
 const STACK_LIMIT = 100;
@@ -28,6 +30,24 @@ class Inventory {
 
     getSelectedSlot() {
         return this.slots[this.selectedSlotIndex];
+    }
+
+    serialize() {
+        return this.slots.map(slot => ({
+            type: Number(slot?.type) || 0,
+            count: Number(slot?.count) || 0
+        }));
+    }
+
+    deserialize(slots) {
+        if (!Array.isArray(slots) || slots.length !== INVENTORY_SIZE) return false;
+        this.slots = slots.map(slot => {
+            const type = Math.max(0, Math.min(255, Math.floor(Number(slot?.type) || 0)));
+            const count = Math.max(0, Math.min(STACK_LIMIT, Math.floor(Number(slot?.count) || 0)));
+            return count > 0 && type > 0 ? { type, count } : { type: 0, count: 0 };
+        });
+        this.updateUI();
+        return true;
     }
 
     selectSlot(index) {
@@ -191,6 +211,7 @@ class Player {
         this.canJump = false;
         this.spaceHeld = false;
 
+        // --- GESTION DE LA VITESSE ET SPRINT ---
         this.walkSpeed = 4.3;
         this.sprintSpeed = 7.5;
         this.speed = this.walkSpeed;
@@ -201,6 +222,7 @@ class Player {
 
         this.stepTimer = 0;
         
+        // 0: 1re personne, 1: 3e personne vue arrière, 2: 3e personne vue face
         this.cameraMode = 0;
         this.thirdPersonDistance = 3.5;
 
@@ -210,6 +232,48 @@ class Player {
         this.initControls();
         this.updateCameraPosition();
         this.updateHealthUI();
+    }
+
+    serializeState() {
+        return {
+            x: this.position.x, y: this.position.y, z: this.position.z,
+            rot_x: this.camera.rotation.x, rot_y: this.camera.rotation.y,
+            health: this.health,
+            selected_slot: this.inventory.selectedSlotIndex,
+            camera_mode: this.cameraMode,
+            velocity_x: this.velocity.x, velocity_y: this.velocity.y, velocity_z: this.velocity.z,
+            inventory: this.inventory.serialize()
+        };
+    }
+
+    restoreState(state, options = {}) {
+        if (!state) return false;
+        const full = options.full !== false;
+        const n = Number;
+        if ([state.x, state.y, state.z].every(v => Number.isFinite(n(v)))) {
+            this.position.set(n(state.x), n(state.y), n(state.z));
+        }
+        if (Number.isFinite(n(state.rot_x)) && Number.isFinite(n(state.rot_y))) {
+            this.camera.rotation.set(n(state.rot_x), n(state.rot_y), 0);
+        }
+        if (Number.isFinite(n(state.velocity_x)) && Number.isFinite(n(state.velocity_y)) && Number.isFinite(n(state.velocity_z))) {
+            this.velocity.set(n(state.velocity_x), n(state.velocity_y), n(state.velocity_z));
+        }
+        if (full) {
+            if (Number.isFinite(n(state.health))) {
+                this.health = Math.max(0, Math.min(this.maxHealth, n(state.health)));
+            }
+            if (Number.isInteger(Number(state.selected_slot))) {
+                this.inventory.selectedSlotIndex = Math.max(0, Math.min(HOTBAR_SIZE - 1, Number(state.selected_slot)));
+            }
+            if (Number.isInteger(Number(state.camera_mode))) {
+                this.cameraMode = Math.max(0, Math.min(2, Number(state.camera_mode)));
+            }
+            this.inventory.deserialize(state.inventory);
+            this.updateHealthUI();
+        }
+        this.updateCameraPosition();
+        return true;
     }
 
     updateHealthUI() {
@@ -416,6 +480,10 @@ class Player {
         this.cameraMode = (this.cameraMode + 1) % 3;
         if (this.playerGroup) this.playerGroup.visible = (this.cameraMode !== 0);
 
+        // PointerLockControls (yawObject -> pitchObject -> camera) gère déjà le pitch via la souris.
+        // En mode "vue face" on tourne directement la caméra pour regarder le joueur ; en sortant
+        // de ce mode il faut annuler cette rotation locale, sinon elle s'additionne à celle de la
+        // souris (double rotation) et la vue reste cassée même en 1re personne / vue arrière.
         if (this.cameraMode !== 2) {
             this.camera.rotation.set(0, 0, 0);
             this.camera.quaternion.identity();
@@ -450,6 +518,9 @@ class Player {
     updateCameraPosition() {
         this.pivot.set(this.position.x, this.position.y + this.eyeHeight, this.position.z);
 
+        // Direction de regard "brute" (souris), capturée AVANT toute manipulation de caméra :
+        // c'est celle-ci qui doit orienter le modèle du joueur, jamais la direction recalculée
+        // après un éventuel lookAt (sinon le personnage se retourne face à la caméra en mode 2).
         this.camera.getWorldDirection(this.lookDir);
 
         if (this.cameraMode === 0) {
@@ -464,6 +535,10 @@ class Player {
             this.controls?.getObject().position.copy(finalPos);
 
             if (this.cameraMode === 2) {
+                // Important : on tourne la vraie caméra (feuille de la hiérarchie), pas le
+                // yawObject renvoyé par getObject(). THREE.Object3D.lookAt() compense
+                // automatiquement la rotation des parents (yaw + pitch de la souris), donc
+                // l'orientation finale de la caméra est correcte sans double rotation.
                 this.camera.lookAt(this.pivot);
             } else {
                 this.camera.rotation.set(0, 0, 0);
@@ -516,6 +591,7 @@ class Player {
 
         const dt = Math.min(delta, 0.05);
 
+        // Application de la vitesse selon le sprint (uniquement en avançant)
         if (this.isSprinting && this.moveForward) {
             this.speed = this.sprintSpeed;
         } else {

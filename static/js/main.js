@@ -1,3 +1,6 @@
+// ============================================================================
+//  main.js — La Plaine (version optimisée avec système de Chat & Commandes)
+// ============================================================================
 (function () {
     const loadingText = document.getElementById('loading-text');
     const setStatus = (t) => { if (loadingText) loadingText.textContent = t; };
@@ -8,6 +11,7 @@
     });
 
     async function main() {
+        // --- 0. MONDE SÉLECTIONNÉ ---
         const params = new URLSearchParams(window.location.search);
         const worldId = params.get('world');
 
@@ -24,14 +28,24 @@
 
         const worldInfo = await worldResponse.json();
 
-        const changesResponse = await fetch(`/api/worlds/${encodeURIComponent(worldId)}/changes`);
+        const worldKey = encodeURIComponent(worldId);
+        const [changesResponse, playerResponse, stateResponse, chunksResponse] = await Promise.all([
+            fetch(`/api/worlds/${worldKey}/changes`),
+            fetch(`/api/worlds/${worldKey}/player`),
+            fetch(`/api/worlds/${worldKey}/state`),
+            fetch(`/api/worlds/${worldKey}/generated-chunks`)
+        ]);
         if (!changesResponse.ok) throw new Error('Impossible de charger les modifications du monde.');
+        if (!playerResponse.ok) throw new Error('Impossible de charger l’état du joueur.');
+        if (!stateResponse.ok) throw new Error('Impossible de charger l’état du monde.');
+        if (!chunksResponse.ok) throw new Error('Impossible de charger les chunks générés.');
+
         const changesInfo = await changesResponse.json();
-
-        const playerResponse = await fetch(`/api/worlds/${encodeURIComponent(worldId)}/player`);
-        if (!playerResponse.ok) throw new Error('Impossible de charger la position du joueur.');
         const playerInfo = await playerResponse.json();
+        const worldStateInfo = await stateResponse.json();
+        const generatedChunksInfo = await chunksResponse.json();
 
+        // --- 1. SCÈNE ET RENDU ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87ceeb);
         scene.fog = new THREE.Fog(0x87ceeb, 20, 44);
@@ -47,6 +61,7 @@
         canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;display:block;z-index:0;';
         document.body.appendChild(canvas);
 
+        // --- RÉSOLUTION : réglage du menu + adaptation automatique en mode "auto" ---
         let autoScale = 1; // ne fait que baisser si le PC n'arrive pas à tenir les FPS
         function applyResolution() {
             const setting = localStorage.getItem('gameResolution') || 'auto';
@@ -60,10 +75,12 @@
         applyResolution();
         window.addEventListener('resize', applyResolution);
 
+        // Overlay "sous l'eau" : un simple div translucide
         const waterOverlay = document.createElement('div');
         waterOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(20,80,170,0.32);pointer-events:none;display:none;z-index:12;';
         document.body.appendChild(waterOverlay);
 
+        // --- 2. MONDE, PARTICULES ET JOUEUR ---
         setStatus('Chargement des textures...');
         const world = new World(scene, {
             worldId: Number(worldInfo.id),
@@ -73,8 +90,11 @@
 
         world.loadPersistedChanges(changesInfo.changes || []);
         world.loadPlayerStates(playerInfo.states || []);
+        world.loadGeneratedChunks(generatedChunksInfo.chunks || []);
+        world.loadWorldState(worldStateInfo.state || null);
 
-        if (window.dimensionRegistry) window.dimensionRegistry.setInitialDimension(world, 'overworld');
+        const initialDimensionId = world.currentDimensionId || 'overworld';
+        if (window.dimensionRegistry) window.dimensionRegistry.setInitialDimension(world, initialDimensionId);
         await world.init(setStatus);
 
         const particleManager = new ParticleManager(scene, world);
@@ -90,6 +110,7 @@
         const cloudToggleGame = document.getElementById('cloud-toggle-game');
         const waterShaderToggleGame = document.getElementById('water-shader-toggle-game');
 
+        // --- 2.5 INTERFACE ET LOGIQUE DU CHAT / COMMANDES ---
         const chatContainer = document.createElement('div');
         chatContainer.style.cssText = `
             position: fixed;
@@ -174,6 +195,7 @@
 
             const lower = trimmed.toLowerCase();
 
+            // Commande : list biomes
             if (lower === 'list biomes') {
                 let biomes = [];
                 if (typeof biomeRegistry !== 'undefined' && biomeRegistry) {
@@ -192,6 +214,7 @@
                 return;
             }
 
+            // Commande : TP biome <nom>
             if (lower.startsWith('tp biome ')) {
                 const targetBiomeName = trimmed.substring(9).trim();
                 if (!targetBiomeName) {
@@ -201,6 +224,7 @@
 
                 addChatMessage(`Recherche du biome "${targetBiomeName}"...`, '#ffff55');
 
+                // Recherche progressive en spirale autour du joueur
                 let found = false;
                 const startX = Math.floor(player.position.x);
                 const startZ = Math.floor(player.position.z);
@@ -267,19 +291,23 @@
             }
         });
 
+        // --- 3. CHARGEMENT DU MONDE / POSITION DU JOUEUR ---
         const preRadius = Math.min(world.renderDistance, 2);
-        await world.preload(0, 0, preRadius, (p) => setStatus('Génération du terrain... ' + Math.round(p * 100) + '%'));
-
-        const savedPlayer = world.getSavedPlayerState('overworld');
-        const spawn = world.findSpawn(preRadius * 16 - 4);
+        const savedPlayer = world.getSavedPlayerState(initialDimensionId);
+        let preloadX = 0, preloadZ = 0;
+        if (savedPlayer) {
+            preloadX = Number(savedPlayer.x) || 0;
+            preloadZ = Number(savedPlayer.z) || 0;
+        } else {
+            const dim = window.dimensionRegistry?.get(initialDimensionId);
+            if (dim) { preloadX = dim.offsetX; preloadZ = dim.offsetZ; }
+        }
+        await world.preload(Math.floor(preloadX / 16), Math.floor(preloadZ / 16), preRadius, (p) => setStatus('Génération du terrain... ' + Math.round(p * 100) + '%'));
 
         if (savedPlayer) {
-            player.position.set(Number(savedPlayer.x), Number(savedPlayer.y), Number(savedPlayer.z));
-            player.velocity.set(0, 0, 0);
-            if (Number.isFinite(Number(savedPlayer.rot_x)) && Number.isFinite(Number(savedPlayer.rot_y))) {
-                player.camera.rotation.set(Number(savedPlayer.rot_x), Number(savedPlayer.rot_y), 0);
-            }
+            player.restoreState(savedPlayer);
         } else {
+            const spawn = world.findSpawn(preRadius * 16 - 4);
             player.position.set(spawn.x, spawn.y + 0.05, spawn.z);
             player.velocity.set(0, 0, 0);
         }
@@ -288,15 +316,13 @@
         player.updateCameraPosition();
         world.updateChunks(player.position.x, player.position.z, true);
 
+        // Lors d'un changement de dimension, seule la position de cette dimension
+        // est restaurée : l'inventaire/santé restent globaux au joueur.
         world.onDimensionChanged = (dimensionId) => {
             const state = world.getSavedPlayerState(dimensionId);
             if (!state) return;
-            player.position.set(Number(state.x), Number(state.y), Number(state.z));
-            player.velocity.set(0, 0, 0);
-            if (Number.isFinite(Number(state.rot_x)) && Number.isFinite(Number(state.rot_y))) {
-                player.camera.rotation.set(Number(state.rot_x), Number(state.rot_y), 0);
-            }
-            player.updateCameraPosition();
+            player.restoreState(state, { full: false });
+            world.updateChunks(player.position.x, player.position.z, true);
         };
 
         async function savePlayerState() {
@@ -304,11 +330,7 @@
             const dimension = world.currentDimensionId || 'overworld';
             const payload = {
                 dimension,
-                x: player.position.x,
-                y: player.position.y,
-                z: player.position.z,
-                rot_x: player.camera.rotation.x,
-                rot_y: player.camera.rotation.y
+                ...player.serializeState()
             };
 
             world.savedPlayerStates.set(dimension, payload);
@@ -324,17 +346,32 @@
             }
         }
 
-        setInterval(() => { world.flushChanges(); }, 3000);
-        setInterval(() => { savePlayerState(); }, 5000);
-        window.addEventListener('pagehide', () => {
+        // Sauvegardes périodiques : aucune requête SQLite à chaque clic.
+        const saveEverything = () => {
             savePlayerState();
             world.flushChanges();
+            world.flushGeneratedChunks();
+            world.saveWorldState();
+        };
+
+        setInterval(() => {
+            world.flushChanges();
+            world.flushGeneratedChunks();
+        }, 3000);
+        setInterval(() => {
+            savePlayerState();
+            world.saveWorldState();
+        }, 5000);
+        window.addEventListener('pagehide', saveEverything);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') saveEverything();
         });
 
         let isWorldLoading = false;
         if (loadingOverlay) loadingOverlay.style.display = 'none';
         if (clickOverlay) clickOverlay.style.display = 'flex';
 
+        // --- 4. OVERLAYS & CONTRÔLES ---
         if (cloudToggleGame) {
             cloudToggleGame.checked = localStorage.getItem('showClouds') !== 'false';
             cloudToggleGame.addEventListener('change', (e) => {
@@ -370,6 +407,7 @@
             if (!e.detail.open && player.controls && !isChatOpen) player.controls.lock();
         });
 
+        // --- 5. INTERACTION AVEC LES BLOCS ---
         const REACH = 6;
         const hit = { x: 0, y: 0, z: 0, id: 0, nx: 0, ny: 0, nz: 0 };
         const dir = new THREE.Vector3();
@@ -443,6 +481,7 @@
         window.addEventListener('mouseup', (e) => { if (e.button === mouseHeld) mouseHeld = -1; });
         window.addEventListener('contextmenu', (e) => e.preventDefault());
 
+        // --- 6. BOUCLE PRINCIPALE ---
         const fpsVal = document.getElementById('fps-val');
         const savedLimit = localStorage.getItem('fpsLimit') || 'max';
         const limit = savedLimit === 'max' ? 0 : parseInt(savedLimit, 10) || 0;

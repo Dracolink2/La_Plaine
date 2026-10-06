@@ -1,3 +1,16 @@
+// ============================================================================
+// generation.js — Bibliothèque de génération du monde
+// V0.2.0.0
+// - Seed déterministe
+// - Bruit Perlin
+// - Hauteur du terrain
+// - Génération des arbres
+// - Génération des chunks de terrain + décorations des biomes
+//
+// Ce fichier ne gère PAS les meshes, le streaming ou le rendu.
+// World.js lui fournit le monde et lui demande simplement de générer.
+// ============================================================================
+
 function hashSeed(seed) {
     seed = String(seed ?? '0');
     let h = 2166136261 >>> 0;
@@ -38,6 +51,7 @@ class PerlinNoise {
         const random = new SeededRandom(seed);
         for (let i = 0; i < 256; i++) this.p[i] = i;
 
+        // Fisher-Yates déterministe : même seed = même permutation.
         for (let i = 255; i > 0; i--) {
             const j = Math.floor(random.next() * (i + 1));
             const tmp = this.p[i];
@@ -80,6 +94,107 @@ class PerlinNoise {
 }
 
 const Generation = {
+    // Version indépendante de la version du jeu : elle identifie la génération historique.
+    GENERATION_VERSION: 1,
+
+    // ========================================================================
+    // STRUCTURES
+    // ========================================================================
+    // Les structures restent de simples fichiers chargés dans
+    // window.BiomeStructures. Aucun registre global n'est nécessaire :
+    // le biome choisit directement celle qu'il veut utiliser.
+    //
+    // Une structure est testée au centre d'un chunk uniquement. Cela évite
+    // les doublons, limite les calculs et garantit qu'une petite structure
+    // reste entièrement dans son chunk.
+    trySpawnStructure(world, structure, x, surfaceY, z, options = {}) {
+        if (!world || !structure || typeof structure.place !== 'function') return false;
+
+        const size = structure.size || { x: 1, y: 1, z: 1 };
+        const width = Math.max(1, Math.floor(size.x || 1));
+        const depth = Math.max(1, Math.floor(size.z || 1));
+        const height = Math.max(1, Math.floor(size.y || 1));
+
+        const chunkX = Math.floor(x / 16);
+        const chunkZ = Math.floor(z / 16);
+        const centerX = chunkX * 16 + 8;
+        const centerZ = chunkZ * 16 + 8;
+
+        if (x !== centerX || z !== centerZ) return false;
+        if (width > 16 || depth > 16) return false;
+
+        const anchorX = x - Math.floor(width / 2);
+        const anchorZ = z - Math.floor(depth / 2);
+        const minFlatLength = Math.max(1, Math.floor(
+            structure.minFlatLength || Math.max(width, depth)
+        ));
+        const tolerance = Number.isFinite(structure.flatTolerance)
+            ? Math.max(0, structure.flatTolerance)
+            : 0;
+
+        // Vérifie le terrain sous toute l'emprise de la structure.
+        let minY = Infinity;
+        let maxY = -Infinity;
+        let validSurface = true;
+
+        for (let dx = 0; dx < width; dx++) {
+            for (let dz = 0; dz < depth; dz++) {
+                const px = anchorX + dx;
+                const pz = anchorZ + dz;
+                const py = world.getTerrainHeight(px, pz);
+
+                if (!Number.isFinite(py) || py <= world.seaLevel + 1) {
+                    validSurface = false;
+                    break;
+                }
+
+                minY = Math.min(minY, py);
+                maxY = Math.max(maxY, py);
+            }
+            if (!validSurface) break;
+        }
+
+        if (!validSurface || (maxY - minY) > tolerance) return false;
+        if (Math.max(width, depth) < minFlatLength) return false;
+
+        // Le biome peut demander que la structure reste entièrement dans son biome.
+        if (options.sameBiome && world.biomeRegistry?.getBiomeAt) {
+            const biomeId = options.biomeId || null;
+            for (let dx = 0; dx < width; dx++) {
+                for (let dz = 0; dz < depth; dz++) {
+                    const biome = world.biomeRegistry.getBiomeAt(
+                        anchorX + dx, anchorZ + dz, world.perlin
+                    );
+                    if (!biome || (biomeId && biome.id !== biomeId)) return false;
+                }
+            }
+        }
+
+        // Toute la structure doit être libre avant d'être posée.
+        for (let dx = 0; dx < width; dx++) {
+            for (let dz = 0; dz < depth; dz++) {
+                for (let dy = 0; dy < height; dy++) {
+                    if (world.getBlock(anchorX + dx, minY + 1 + dy, anchorZ + dz) !== 0) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        const flat = minY === maxY;
+        if (!flat || structure.guaranteedOnFlat !== true) {
+            const chance = Number.isFinite(structure.chance)
+                ? Math.max(0, Math.min(1, structure.chance))
+                : 0;
+            const random = (hashSeed(
+                `${world.seed}|structure|${structure.id || 'unknown'}|${centerX}|${centerZ}`
+            ) >>> 0) / 4294967296;
+            if (random >= chance) return false;
+        }
+
+        structure.place(world, anchorX, minY + 1, anchorZ);
+        return true;
+    },
     computeHeight(world, biome, x, z) {
         const elevation = world.perlin.noise(x * 0.03, z * 0.03) * biome.elevationScale;
         const detail = world.perlin.noise(x * 0.1, z * 0.1) * biome.detailScale;
@@ -110,11 +225,17 @@ const Generation = {
         }
     },
 
-    generateTerrainData(world, cx, cz) {
+    generateTerrainData(world, cx, cz, requestedVersion = this.GENERATION_VERSION) {
         const chunk = world.getChunkAt(cx, cz, true);
         if (chunk.generated) return;
-        chunk.generated = true;
 
+        // Pour l'instant V1 est la seule génération disponible.
+        // L'API est déjà versionnée afin que les futures versions puissent
+        // conserver leurs anciens générateurs sans toucher aux chunks existants.
+        const version = Number(requestedVersion) || this.GENERATION_VERSION;
+        if (version !== this.GENERATION_VERSION) {
+            console.warn(`Génération historique V${version} indisponible, utilisation de V${this.GENERATION_VERSION}.`);
+        }
         if (!world.biomeRegistry) return;
 
         world.generating = true;
@@ -147,6 +268,22 @@ const Generation = {
         }
         chunk.maxY = maxY;
 
+        // Structures : une seule tentative au centre du chunk, avant les
+        // décorations classiques. Cela donne priorité à la structure et évite
+        // qu'un arbre généré quelques lignes plus tôt ne bloque son apparition.
+        const structureX = startX + 8;
+        const structureZ = startZ + 8;
+        const structureSurfaceY = heights[(8 << 4) | 8];
+        const structureBiome = world.biomeRegistry.getBiomeAt(
+            structureX, structureZ, world.perlin
+        );
+        if (structureSurfaceY > sea && typeof structureBiome?.generateStructures === 'function') {
+            structureBiome.generateStructures(
+                world, structureX, structureSurfaceY, structureZ, world.perlin
+            );
+        }
+
+        // Marge de 2 blocs : évite de générer une décoration trop proche d'un bord.
         for (let x = startX + 2; x < startX + 14; x++) {
             for (let z = startZ + 2; z < startZ + 14; z++) {
                 const surfaceY = heights[((z - startZ) << 4) | (x - startX)];
@@ -159,10 +296,17 @@ const Generation = {
         }
 
         world.generating = false;
+        chunk.generated = true;
+        chunk.generationVersion = this.GENERATION_VERSION;
+        if (typeof world._recordGeneratedChunk === 'function') {
+            world._recordGeneratedChunk(cx, cz, this.GENERATION_VERSION);
+        }
     }
 };
 
+// API globale volontairement simple : world.js et les biomes peuvent l'utiliser.
 window.Generation = Generation;
+window.GENERATION_VERSION = Generation.GENERATION_VERSION;
 window.PerlinNoise = PerlinNoise;
 window.getWorldSeed = getWorldSeed;
 window.SeededRandom = SeededRandom;

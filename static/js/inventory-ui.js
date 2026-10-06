@@ -1,3 +1,5 @@
+// Gère l'affichage et les interactions du panneau d'inventaire complet (36 cases),
+// ouvert/fermé via la touche E (voir player.js -> toggleInventory).
 class InventoryUI {
     constructor(player) {
         this.player = player;
@@ -18,6 +20,7 @@ class InventoryUI {
             if (this.inventory.isOpen) this.render();
         };
 
+        // Fermer avec Échap aussi, en plus de E
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Escape' && this.inventory.isOpen) {
                 this.player.toggleInventory();

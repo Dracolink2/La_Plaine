@@ -9,6 +9,16 @@ overworldBiomeRegistry.register({
     elevationScale: 8,
     detailScale: 3,
 
+    generateStructures(world, x, surfaceY, z) {
+        const house = window.BiomeStructures?.petiteMaison;
+        if (window.Generation?.trySpawnStructure && house) {
+            window.Generation.trySpawnStructure(world, house, x, surfaceY, z, {
+                sameBiome: true,
+                biomeId: 'foret'
+            });
+        }
+    },
+
     generateDecorations(world, x, surfaceY, z, perlin) {
         if (world.getBlock(x, surfaceY + 1, z) !== 0) return;
 

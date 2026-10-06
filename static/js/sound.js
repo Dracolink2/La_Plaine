@@ -33,12 +33,16 @@ class SoundManager {
     }
 
     setupSynths() {
+        // Volume général Tone.js
         Tone.getDestination().volume.value = Tone.gainToDb(this.masterVolume);
 
+        // Réverbération d'environnement
         this.reverb = new Tone.Reverb({ decay: 1.2, wet: 0.12 }).toDestination();
 
+        // Filtre passe-bas utilisé pour simuler l'étouffement sous l'eau (bypass par défaut)
         this.underwaterFilter = new Tone.Filter(20000, "lowpass").connect(this.reverb);
 
+        // MembraneSynth pour les impacts graves (pas, pose de blocs, atterrissage)
         this.thudSynth = new Tone.MembraneSynth({
             pitchDecay: 0.04,
             octaves: 3,
@@ -46,12 +50,14 @@ class SoundManager {
             envelope: { attack: 0.001, decay: 0.18, sustain: 0, release: 0.08 }
         }).connect(this.underwaterFilter);
 
+        // NoiseSynth & Filtre pour la terre, la brise et les craquements
         this.noiseFilter = new Tone.Filter(1400, "lowpass").connect(this.underwaterFilter);
         this.noiseSynth = new Tone.NoiseSynth({
             noise: { type: 'pink' },
             envelope: { attack: 0.002, decay: 0.12, sustain: 0, release: 0.04 }
         }).connect(this.noiseFilter);
 
+        // MetalSynth pour les minerais et la pierre
         this.metalSynth = new Tone.MetalSynth({
             frequency: 180,
             envelope: { attack: 0.001, decay: 0.08, release: 0.01 },
@@ -61,11 +67,13 @@ class SoundManager {
             octaves: 1.2
         }).connect(this.underwaterFilter);
 
+        // PolySynth pour les interactions UI / Hotbar / Inventaire
         this.uiSynth = new Tone.PolySynth(Tone.Synth, {
             oscillator: { type: 'triangle' },
             envelope: { attack: 0.002, decay: 0.08, sustain: 0, release: 0.05 }
         }).toDestination();
 
+        // Petit synthé dédié au saut / à l'atterrissage (plus "rebondissant")
         this.bounceSynth = new Tone.Synth({
             oscillator: { type: 'sine' },
             envelope: { attack: 0.001, decay: 0.12, sustain: 0, release: 0.08 }
@@ -104,6 +112,8 @@ class SoundManager {
         this.ambianceAudio.play().catch(() => {});
     }
 
+    // Active/désactive l'effet d'étouffement sous l'eau (appelé depuis main.js
+    // quand la caméra du joueur passe sous le niveau de la mer).
     setUnderwater(isUnder) {
         if (this.underwater === isUnder) return;
         this.underwater = isUnder;
@@ -119,10 +129,13 @@ class SoundManager {
         }
     }
 
+    // Petite variation aléatoire de hauteur pour éviter la répétitivité mécanique
+    // des sons de pas/cassage répétés en boucle.
     randomSemitoneOffset(range = 2) {
         return (Math.random() * 2 - 1) * range;
     }
 
+    // --- BRUITS DE PAS SELON LE BLOC ---
     playStep(blockId = 1) {
         if (!this.initialized || this.sfxVolume <= 0 || typeof Tone === 'undefined') return;
 
@@ -158,6 +171,7 @@ class SoundManager {
         }
     }
 
+    // --- SAUT ---
     playJump() {
         if (!this.initialized || this.sfxVolume <= 0 || typeof Tone === 'undefined' || !this.bounceSynth) return;
         const vol = Tone.gainToDb(this.sfxVolume * 0.3);
@@ -165,6 +179,7 @@ class SoundManager {
         this.bounceSynth.triggerAttackRelease("G3", "32n");
     }
 
+    // --- ATTERRISSAGE (après une chute) ---
     playLand(fallIntensity = 1) {
         if (!this.initialized || this.sfxVolume <= 0 || typeof Tone === 'undefined') return;
         const clamped = Math.max(0.3, Math.min(1.5, fallIntensity));
@@ -179,6 +194,7 @@ class SoundManager {
         }
     }
 
+    // --- CASSER UN BLOC ---
     playBlockBreak(blockId = 1) {
         if (!this.initialized || this.sfxVolume <= 0 || typeof Tone === 'undefined') return;
 
@@ -197,6 +213,7 @@ class SoundManager {
         }
     }
 
+    // --- POSER UN BLOC ---
     playBlockPlace(blockId = 1) {
         if (!this.initialized || this.sfxVolume <= 0 || typeof Tone === 'undefined') return;
 
@@ -210,6 +227,7 @@ class SoundManager {
         this.noiseSynth.triggerAttackRelease("32n");
     }
 
+    // --- SÉLECTION HOTBAR / BOUTON ---
     playSelectSlot() {
         if (!this.initialized || this.sfxVolume <= 0 || typeof Tone === 'undefined') return;
 
@@ -221,6 +239,7 @@ class SoundManager {
         this.uiSynth.triggerAttackRelease(randomNote, "32n");
     }
 
+    // --- OUVERTURE / FERMETURE DE L'INVENTAIRE ---
     playInventoryToggle(opening = true) {
         if (!this.initialized || this.sfxVolume <= 0 || typeof Tone === 'undefined') return;
 
@@ -231,4 +250,5 @@ class SoundManager {
 }
 
 const soundManager = new SoundManager();
+// Les "const" de haut niveau ne sont pas des propriétés de window : main.js utilise window.soundManager
 window.soundManager = soundManager;
