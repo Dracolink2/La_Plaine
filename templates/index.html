@@ -4,9 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Plaine V0.2.1.0 - En Jeu</title>
+    <title>La Plaine V0.1.0.0 - En Jeu</title>
     <link rel="stylesheet" href="/static/css/game.css">
 
+```
 <style>
     #loading-overlay {
         position: fixed;
@@ -51,11 +52,13 @@
         color: #ccc;
     }
 </style>
+```
 
 </head>
 
 <body>
 
+```
 <!-- Écran de chargement -->
 <div id="loading-overlay">
     <div class="loading-box">
@@ -278,13 +281,25 @@
             const res = await fetch('/api/modules');
             const modules = await res.json();
 
+            /*
+             * Charger tous les blocs trouvés
+             * dans static/js/blocks/
+             */
             for (const file of modules.blocks) {
                 await loadScript(
                     `/static/js/blocks/${file}`
                 );
             }
 
-
+            /*
+             * Charger chaque dimension :
+             *
+             * 1. registre des biomes
+             * 2. biomes
+             * 3. access.js
+             *
+             * access.js enregistre ensuite la dimension.
+             */
             for (const dim of modules.dimensions) {
                 const base =
                     `/static/js/dimensions/${dim.id}`;
@@ -299,6 +314,15 @@
                     );
                 }
 
+                // Les structures ne possèdent volontairement pas de registre.
+                // Elles sont simplement préchargées puis choisies directement
+                // par les biomes lors de la génération.
+                for (const file of (dim.structures || [])) {
+                    await loadScript(
+                        `${base}/biomes/structures/${file}`
+                    );
+                }
+
                 await loadScript(
                     `${base}/access.js`
                 );
@@ -309,7 +333,13 @@
                     "Initialisation du moteur de jeu...";
             }
 
-
+            /*
+             * IMPORTANT :
+             * generation.js doit être chargé AVANT world.js.
+             *
+             * world.js utilise les fonctions de génération
+             * et l'API window.Generation.
+             */
             await loadScript(
                 '/static/js/generation.js'
             );
@@ -351,6 +381,8 @@
         }
     }
 
+    // Lancer le chargement au démarrage
+    // de la page.
     initPluginsAndEngine();
 </script>
 

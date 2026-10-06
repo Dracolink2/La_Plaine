@@ -8,6 +8,10 @@ from flask import Flask, render_template, jsonify, request
 
 app = Flask(__name__)
 
+# ============================================================================
+# SQLite — sauvegarde des mondes
+# ============================================================================
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE = os.path.join(BASE_DIR, "worlds.db")
 
@@ -93,6 +97,8 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_generated_chunks_world_dimension
             ON generated_chunks(world_id, dimension);
     """)
+    # Migration douce des anciennes bases 0.2.0.x : on ajoute les colonnes
+    # sans supprimer les sauvegardes existantes.
     existing = {row[1] for row in db.execute("PRAGMA table_info(player_state)").fetchall()}
     migrations = {
         "health": "REAL NOT NULL DEFAULT 9",
@@ -110,6 +116,8 @@ def init_db():
     db.commit()
     db.close()
 
+
+# Création automatique de la base au lancement du serveur.
 init_db()
 
 
@@ -134,6 +142,11 @@ def get_world_or_404(db, world_id):
 
     return row
 
+
+# ============================================================================
+# Pages
+# ============================================================================
+
 @app.route('/')
 def menu():
     return render_template('menu.html')
@@ -142,6 +155,11 @@ def menu():
 @app.route('/game')
 def game():
     return render_template('index.html')
+
+
+# ============================================================================
+# API — mondes
+# ============================================================================
 
 @app.route('/api/worlds', methods=['GET'])
 def list_worlds():
@@ -177,6 +195,7 @@ def create_world():
             "error": "Le nom du monde est trop long (64 caractères maximum)."
         }), 400
 
+    # Une seed vide signifie : génération aléatoire.
     if not seed:
         seed = str(secrets.randbits(32))
 
@@ -262,6 +281,15 @@ def delete_world(world_id):
         "deleted": world_id
     })
 
+
+# ============================================================================
+# API — blocs modifiés
+#
+# IMPORTANT :
+# On ne sauvegarde PAS le monde généré.
+# On sauvegarde uniquement les blocs dont le joueur a changé l'état.
+# block_id = 0 signifie explicitement "air".
+# ============================================================================
 
 @app.route('/api/worlds/<int:world_id>/changes', methods=['GET'])
 def get_block_changes(world_id):
@@ -378,6 +406,10 @@ def save_block_changes(world_id):
         "saved": len(changes)
     })
 
+
+# ============================================================================
+# API — état du monde et chunks générés
+# ============================================================================
 
 @app.route('/api/worlds/<int:world_id>/state', methods=['GET'])
 def get_world_state(world_id):
@@ -512,6 +544,10 @@ def save_generated_chunks(world_id):
     return jsonify({"ok": True, "saved": len(chunks)})
 
 
+# ============================================================================
+# API — position du joueur
+# ============================================================================
+
 @app.route('/api/worlds/<int:world_id>/player', methods=['GET'])
 def get_player_state(world_id):
     dimension = str(request.args.get("dimension", "")).strip()
@@ -606,6 +642,10 @@ def save_player_state(world_id):
     return jsonify({"ok": True})
 
 
+# ============================================================================
+# API — découverte des modules du moteur
+# ============================================================================
+
 @app.route('/api/modules')
 def get_modules():
     blocks_dir = os.path.join(app.static_folder, 'js', 'blocks')
@@ -627,6 +667,7 @@ def get_modules():
 
             biomes_dir = os.path.join(dim_path, 'biomes')
             biome_files = []
+            structure_files = []
 
             if os.path.exists(biomes_dir):
                 biome_files = sorted(
@@ -634,9 +675,17 @@ def get_modules():
                     if f.lower().endswith('.js') and f.lower() != 'register.js'
                 )
 
+                structures_dir = os.path.join(biomes_dir, 'structures')
+                if os.path.exists(structures_dir):
+                    structure_files = sorted(
+                        f for f in os.listdir(structures_dir)
+                        if f.lower().endswith('.js')
+                    )
+
             dimensions.append({
                 'id': dim_name,
-                'biomes': biome_files
+                'biomes': biome_files,
+                'structures': structure_files
             })
 
     return jsonify({

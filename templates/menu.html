@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Plaine V0.2.1.0 - Menu</title>
+    <title>La Plaine V0.2.0.0 - Menu</title>
     <link rel="stylesheet" href="/static/css/menu.css">
 </head>
 <body>
@@ -12,7 +12,7 @@
 
     <div id="main-menu">
         <h1>La Plaine</h1>
-        <p class="subtitle">Un monde de blocs à explorer!</p>
+        <p class="subtitle">Un monde de blocs à explorer</p>
 
         <div class="menu-container">
             <button id="btn-play" class="btn-menu primary">JOUER</button>
@@ -334,6 +334,7 @@
             controlsModal.style.display = (controlsModal.style.display === 'block') ? 'none' : 'block';
         });
 
+        // Réglages audio
         const volMasterInput = document.getElementById('vol-master');
         const volMusicInput = document.getElementById('vol-music');
         const volSfxInput = document.getElementById('vol-sfx');
@@ -364,6 +365,7 @@
             soundManager.setSfxVolume(e.target.value / 100);
         });
 
+        // Réglages existants
         const renderInput = document.getElementById('render-distance');
         const renderVal = document.getElementById('render-val');
         const resSelect = document.getElementById('resolution-select');
@@ -411,6 +413,7 @@
             localStorage.setItem('fxShaders', e.target.checked);
         });
 
+        // Fond d'écran
         const textures = [
             '/static/textures/dirt.png',
             '/static/textures/grass_side.png',
