@@ -1,3 +1,16 @@
+// ============================================================================
+// generation.js — Bibliothèque de génération du monde
+// V0.2.0.0
+// - Seed déterministe
+// - Bruit Perlin
+// - Hauteur du terrain
+// - Génération des arbres
+// - Génération des chunks de terrain + décorations des biomes
+//
+// Ce fichier ne gère PAS les meshes, le streaming ou le rendu.
+// World.js lui fournit le monde et lui demande simplement de générer.
+// ============================================================================
+
 function hashSeed(seed) {
     seed = String(seed ?? '0');
     let h = 2166136261 >>> 0;
@@ -38,6 +51,7 @@ class PerlinNoise {
         const random = new SeededRandom(seed);
         for (let i = 0; i < 256; i++) this.p[i] = i;
 
+        // Fisher-Yates déterministe : même seed = même permutation.
         for (let i = 255; i > 0; i--) {
             const j = Math.floor(random.next() * (i + 1));
             const tmp = this.p[i];
@@ -80,6 +94,8 @@ class PerlinNoise {
 }
 
 const Generation = {
+    // Version indépendante de la version du jeu : elle identifie la génération historique.
+    GENERATION_VERSION: 1,
     computeHeight(world, biome, x, z) {
         const elevation = world.perlin.noise(x * 0.03, z * 0.03) * biome.elevationScale;
         const detail = world.perlin.noise(x * 0.1, z * 0.1) * biome.detailScale;
@@ -110,11 +126,17 @@ const Generation = {
         }
     },
 
-    generateTerrainData(world, cx, cz) {
+    generateTerrainData(world, cx, cz, requestedVersion = this.GENERATION_VERSION) {
         const chunk = world.getChunkAt(cx, cz, true);
         if (chunk.generated) return;
-        chunk.generated = true;
 
+        // Pour l'instant V1 est la seule génération disponible.
+        // L'API est déjà versionnée afin que les futures versions puissent
+        // conserver leurs anciens générateurs sans toucher aux chunks existants.
+        const version = Number(requestedVersion) || this.GENERATION_VERSION;
+        if (version !== this.GENERATION_VERSION) {
+            console.warn(`Génération historique V${version} indisponible, utilisation de V${this.GENERATION_VERSION}.`);
+        }
         if (!world.biomeRegistry) return;
 
         world.generating = true;
@@ -147,6 +169,7 @@ const Generation = {
         }
         chunk.maxY = maxY;
 
+        // Marge de 2 blocs : évite de générer une décoration trop proche d'un bord.
         for (let x = startX + 2; x < startX + 14; x++) {
             for (let z = startZ + 2; z < startZ + 14; z++) {
                 const surfaceY = heights[((z - startZ) << 4) | (x - startX)];
@@ -159,10 +182,17 @@ const Generation = {
         }
 
         world.generating = false;
+        chunk.generated = true;
+        chunk.generationVersion = this.GENERATION_VERSION;
+        if (typeof world._recordGeneratedChunk === 'function') {
+            world._recordGeneratedChunk(cx, cz, this.GENERATION_VERSION);
+        }
     }
 };
 
+// API globale volontairement simple : world.js et les biomes peuvent l'utiliser.
 window.Generation = Generation;
+window.GENERATION_VERSION = Generation.GENERATION_VERSION;
 window.PerlinNoise = PerlinNoise;
 window.getWorldSeed = getWorldSeed;
 window.SeededRandom = SeededRandom;

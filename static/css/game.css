@@ -14,6 +14,7 @@ html, body {
     color: #fff;
 }
 
+/* Curseur central façon jeu voxel */
 #crosshair {
     position: absolute;
     top: 50%;
@@ -28,6 +29,7 @@ html, body {
     box-shadow: 1px 1px 0 #000, -1px -1px 0 #000;
 }
 
+/* Compteur FPS discret */
 #fps-counter {
     position: absolute;
     top: 6px;
@@ -45,6 +47,7 @@ html, body {
     text-shadow: 1px 1px 0 #000;
 }
 
+/* BARRE DE VIE */
 #health-container {
     position: absolute;
     bottom: 78px;
@@ -67,6 +70,7 @@ html, body {
     transition: none;
 }
 
+/* HOTBAR */
 #hotbar-container {
     position: absolute;
     bottom: 8px;
@@ -145,6 +149,7 @@ html, body {
     text-shadow: 2px 2px 0 #000;
 }
 
+/* CHAT */
 #chat-container {
     position: fixed;
     bottom: 8px;
@@ -189,6 +194,7 @@ html, body {
     font-family: monospace;
 }
 
+/* Écrans overlay */
 #click-overlay,
 #pause-overlay {
     position: absolute;
@@ -213,6 +219,7 @@ html, body {
     text-shadow: 3px 3px 0 #000;
 }
 
+/* Boutons type menus Minecraft */
 .btn-pause {
     padding: 10px 18px;
     font-size: 16px;
@@ -250,6 +257,7 @@ html, body {
         inset -2px -2px 0 #999;
 }
 
+/* INVENTAIRE */
 #inventory-panel {
     position: absolute;
     top: 0;
