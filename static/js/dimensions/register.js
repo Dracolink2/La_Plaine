@@ -1,31 +1,31 @@
-// static/js/dimensions/register.js
-//
-// Une "dimension" = un biomeRegistry + un fichier static/js/dimensions/<id>/access.js
-// qui l'enregistre avec dimensionRegistry.register({...}).
-//
-// AJOUTER UNE DIMENSION (le minimum) :
-//   dimensionRegistry.register({ id: 'nether', name: 'Le Nether', biomeRegistry: monRegistre });
-//
-// Options facultatives de register() :
-//   canAccess(player)        -> false pour bloquer l'entrée
-//   onDenied(player)         -> appelé quand canAccess refuse (ex: afficher un message)
-//   onEnter(world, player, fromDim) / onLeave(world, player, toDim) -> hooks
-//   portalTarget: 'id'       -> destination du portail de cette dimension
-//                               (par défaut : la dimension suivante, en boucle A -> B -> C -> A)
-//   returnPortal: false      -> ne pas construire de portail à l'arrivée (défaut : true)
-//   naturalPortals: false    -> pas de portails générés naturellement ici (défaut : true)
-//   spawn: { x, z }          -> point de recherche d'apparition, relatif à l'origine de la dimension
-//   portal: { frame: 242, block: 243 }
-//                            -> PORTAIL QUI MÈNE À CETTE DIMENSION : id du bloc de cadre (celui qu'on pose)
-//                               et id du bloc qui remplit l'intérieur. Sans ça : 240 / 241 par défaut.
-//                               Les blocs doivent exister dans ton registre de blocs.
-//
-// Pas de rechargement de monde : chaque dimension occupe une zone de coordonnées très
-// éloignée (DIMENSION_SPACING), donc les chunks ne se chevauchent jamais.
-//
-// Console de test : dimensionRegistry.goTo('nether')
 
-const DIMENSION_SPACING = 200000; // écart en blocs entre deux dimensions
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const DIMENSION_SPACING = 200000; 
 
 class DimensionRegistry {
     constructor() {
@@ -36,15 +36,15 @@ class DimensionRegistry {
 
         this.dimensions = new Map();
         this.order = [];
-        this._byFrame = new Map(); // id bloc cadre -> [dimensions]
-        this._byBlock = new Map(); // id bloc portail -> [dimensions]
+        this._byFrame = new Map(); 
+        this._byBlock = new Map(); 
         this.current = null;
         this.world = null;
         this.player = null;
         this._lastTeleport = 0;
     }
 
-    // ============ ENREGISTREMENT ============
+    
 
     register(d) {
         if (!d || !d.id || !d.biomeRegistry) {
@@ -90,15 +90,15 @@ class DimensionRegistry {
         return true;
     }
 
-    // Vrai si cet id de bloc est le cadre d'un portail (utilisé par main.js à la pose d'un bloc)
+    
     isPortalFrame(id) { return this._byFrame.has(id); }
     isPortalBlock(id) { return this._byBlock.has(id); }
 
     get(id) { return this.dimensions.get(id) || null; }
     getAll() { return this.order.map(id => this.dimensions.get(id)); }
 
-    // Appelé une fois au début, juste après "new World(scene)" : fixe la dimension de départ.
-    // Si l'id n'existe pas, on prend la première dimension enregistrée.
+    
+    
     setInitialDimension(world, id) {
         let dim = this.get(id);
         if (!dim) {
@@ -113,9 +113,9 @@ class DimensionRegistry {
         return true;
     }
 
-    // ============ TÉLÉPORTATION ============
+    
 
-    // Destination du portail depuis une dimension donnée
+    
     getDestination(fromDim) {
         if (!fromDim || this.order.length < 2) return null;
         if (fromDim.portalTarget) {
@@ -127,7 +127,7 @@ class DimensionRegistry {
         return this.get(this.order[(i + 1) % this.order.length]);
     }
 
-    // Raccourci console / commandes : dimensionRegistry.goTo('nether')
+    
     goTo(id) {
         if (!this.world || !this.player) return false;
         return this.switchTo(this.world, this.player, id);
@@ -160,7 +160,7 @@ class DimensionRegistry {
 
         if (from && from.onLeave) this._safe(from.onLeave, world, player, dim);
 
-        // Biomes + dimension courante AVANT de générer les chunks d'arrivée
+        
         world.biomeRegistry = dim.biomeRegistry;
         world.currentBiomeId = null;
         world.currentDimensionId = dim.id;
@@ -186,11 +186,11 @@ class DimensionRegistry {
         try { fn(...args); } catch (e) { console.error('Erreur dans un hook de dimension :', e); }
     }
 
-    // ============ CONSTRUCTION DE PORTAILS ============
+    
 
-    // Construit un cadre + intérieur en bloc-portail. axis: 'x' (cadre le long de Z) ou 'z' (le long de X).
-    // Utilisé par les portails naturels (portal-decoration.js) et le portail de retour.
-    // `portal` = { frame, block } : ids à utiliser (ceux de la dimension DE DESTINATION).
+    
+    
+    
     buildPortalFrame(world, x, surfaceY, z, axis, portal) {
         const frameId = portal ? portal.frame : this.PORTAL_FRAME_ID;
         const blockId = portal ? portal.block : this.PORTAL_BLOCK_ID;
@@ -206,8 +206,8 @@ class DimensionRegistry {
         }
     }
 
-    // Portail de retour, construit une seule fois près du point d'arrivée
-    // Il mène à la dimension d'où l'on vient (`from`), donc il utilise les ids de portail de `from`.
+    
+    
     _ensureReturnPortal(world, dim, from) {
         if (dim._returnFrom.has(from.id)) return;
         dim._returnFrom.add(from.id);
@@ -227,9 +227,9 @@ class DimensionRegistry {
         }
     }
 
-    // Appelé après la pose d'un Bloc de Cadre : cherche un cadre rectangulaire plein
-    // contenant ce bloc (plan XY ou ZY) et remplit l'intérieur si trouvé.
-    // frameId : id du bloc posé (par défaut, lu dans le monde à cette position).
+    
+    
+    
     tryActivatePortal(world, x, y, z, frameId) {
         if (frameId === undefined) frameId = world.getBlockI(x, y, z);
         if (!this.isPortalFrame(frameId)) return false;
@@ -295,13 +295,13 @@ class DimensionRegistry {
                 );
             }
         }
-        // Reconstruit les chunks aux deux extrémités du cadre (peut être à cheval sur 2 chunks)
+        
         world.rebuildAround(x + du[0] * u0, z + du[2] * u0);
         world.rebuildAround(x + du[0] * u1, z + du[2] * u1);
         if (window.soundManager) window.soundManager.playBlockPlace(blockId);
     }
 
-    // Appelé chaque frame depuis main.js
+    
     checkPlayerInPortal(world, player, now) {
         this.world = world;
         this.player = player;
@@ -315,7 +315,7 @@ class DimensionRegistry {
         const candidates = this._byBlock.get(world.getBlockI(bx, by, bz));
         if (!candidates) return;
 
-        // Le bloc de portail désigne la dimension de destination (jamais celle où l'on est déjà)
+        
         const from = this.current || this.get(this.order[0]);
         const options = candidates.filter(d => d !== from);
         if (!options.length) return;

@@ -1,10 +1,10 @@
-// --- INVENTAIRE ---
-// 36 cases : 9 pour la hotbar (0-8), 27 pour le sac (9-35). Stack max : 100.
+
+
 const INVENTORY_SIZE = 36;
 const HOTBAR_SIZE = 9;
 const STACK_LIMIT = 100;
 
-// Icône d'un bloc (texture) pour la hotbar et l'inventaire
+
 function applyBlockIcon(el, def) {
     const t = def && def.textures;
     const url = t ? (t.all || t.sides || t.top || '') : '';
@@ -183,7 +183,7 @@ class Player {
 
         this.inventory = new Inventory();
 
-        // Santé du joueur (9 cœurs)
+        
         this.maxHealth = 9;
         this.health = 9;
 
@@ -211,7 +211,7 @@ class Player {
         this.canJump = false;
         this.spaceHeld = false;
 
-        // --- GESTION DE LA VITESSE ET SPRINT ---
+        
         this.walkSpeed = 4.3;
         this.sprintSpeed = 7.5;
         this.speed = this.walkSpeed;
@@ -222,7 +222,7 @@ class Player {
 
         this.stepTimer = 0;
         
-        // 0: 1re personne, 1: 3e personne vue arrière, 2: 3e personne vue face
+        
         this.cameraMode = 0;
         this.thirdPersonDistance = 3.5;
 
@@ -480,10 +480,10 @@ class Player {
         this.cameraMode = (this.cameraMode + 1) % 3;
         if (this.playerGroup) this.playerGroup.visible = (this.cameraMode !== 0);
 
-        // PointerLockControls (yawObject -> pitchObject -> camera) gère déjà le pitch via la souris.
-        // En mode "vue face" on tourne directement la caméra pour regarder le joueur ; en sortant
-        // de ce mode il faut annuler cette rotation locale, sinon elle s'additionne à celle de la
-        // souris (double rotation) et la vue reste cassée même en 1re personne / vue arrière.
+        
+        
+        
+        
         if (this.cameraMode !== 2) {
             this.camera.rotation.set(0, 0, 0);
             this.camera.quaternion.identity();
@@ -518,9 +518,9 @@ class Player {
     updateCameraPosition() {
         this.pivot.set(this.position.x, this.position.y + this.eyeHeight, this.position.z);
 
-        // Direction de regard "brute" (souris), capturée AVANT toute manipulation de caméra :
-        // c'est celle-ci qui doit orienter le modèle du joueur, jamais la direction recalculée
-        // après un éventuel lookAt (sinon le personnage se retourne face à la caméra en mode 2).
+        
+        
+        
         this.camera.getWorldDirection(this.lookDir);
 
         if (this.cameraMode === 0) {
@@ -535,10 +535,10 @@ class Player {
             this.controls?.getObject().position.copy(finalPos);
 
             if (this.cameraMode === 2) {
-                // Important : on tourne la vraie caméra (feuille de la hiérarchie), pas le
-                // yawObject renvoyé par getObject(). THREE.Object3D.lookAt() compense
-                // automatiquement la rotation des parents (yaw + pitch de la souris), donc
-                // l'orientation finale de la caméra est correcte sans double rotation.
+                
+                
+                
+                
                 this.camera.lookAt(this.pivot);
             } else {
                 this.camera.rotation.set(0, 0, 0);
@@ -591,7 +591,7 @@ class Player {
 
         const dt = Math.min(delta, 0.05);
 
-        // Application de la vitesse selon le sprint (uniquement en avançant)
+        
         if (this.isSprinting && this.moveForward) {
             this.speed = this.sprintSpeed;
         } else {

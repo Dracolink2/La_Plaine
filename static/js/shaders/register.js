@@ -1,6 +1,6 @@
-// Registre de shaders custom, indexés par ID de bloc ou par ID de biome.
-// Si aucun shader n'est enregistré pour un bloc, ou si les shaders sont
-// désactivés dans les paramètres, le matériau standard (texture simple) est utilisé.
+
+
+
 class ShaderRegistry {
     constructor() {
         this.byBlock = new Map();
@@ -9,7 +9,7 @@ class ShaderRegistry {
     }
 
     registerForBlock(blockId, factory) {
-        // factory: (baseTexture) => THREE.ShaderMaterial
+        
         this.byBlock.set(blockId, factory);
     }
 
@@ -38,7 +38,7 @@ class ShaderRegistry {
 
 window.shaderRegistry = new ShaderRegistry();
 
-// --- Exemple : shader d'eau qui ondule légèrement (par bloc, ID 11) ---
+
 shaderRegistry.registerForBlock(11, (baseTexture) => {
     return new THREE.ShaderMaterial({
         transparent: true,
@@ -67,7 +67,7 @@ shaderRegistry.registerForBlock(11, (baseTexture) => {
     });
 });
 
-// --- Exemple : shader "chaleur" qui teinte légèrement les Terres Brûlées ---
+
 shaderRegistry.registerForBiome('terres_brulees', (baseTexture) => {
     return new THREE.ShaderMaterial({
         uniforms: {

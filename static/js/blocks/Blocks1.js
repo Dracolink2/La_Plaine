@@ -100,13 +100,13 @@ blockRegistry.register({
     transparent: true,
     alphaTest: 0.5,
     isPlant: true,
-    lightLevel: 8, // Émet un peu de lumière
+    lightLevel: 8, 
     emitColor: 0xff4444
 });
 
 blockRegistry.register({
     id: 23,
-    name: 'Feuilles d'automne',
+    name: 'Feuilles d automne',
     textures: { all: '/static/textures/automne_leaves.png' },
     transparent: true,
     alphaTest: 0.5
