@@ -24,7 +24,7 @@ overworldBiomeRegistry.register({
             return;
         }
 
-        // Feuillage desséché : ID 23 est le seul bloc de feuillage disponible dans le pack actuel.
+        
         const ashNoise = perlin.noise(x * 0.25, z * 0.25);
         if (ashNoise > 0.36) world.setBlock(x, surfaceY + 1, z, 23);
     }

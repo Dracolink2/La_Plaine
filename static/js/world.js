@@ -1,27 +1,27 @@
-// ============================================================================
-//  world.js — La Plaine (version optimisée)
-//  - Meshing par FACES VISIBLES (1 mesh / chunk / type) au lieu d'1 cube instancié par bloc
-//  - Atlas de textures unique + ombrage des faces + occlusion ambiante (AO) dans les sommets
-//  - Matériaux "Basic" (aucun calcul de lumière) : très léger pour les petits GPU
-//  - Génération de terrain directe dans les tableaux, éviction des chunks lointains
-// ============================================================================
+
+
+
+
+
+
+
 
 const WORLD_HEIGHT = 128;
 
-// --- STOCKAGE COMPACT D'UN CHUNK (16 x 128 x 16, 1 octet / bloc, 0 = air) ---
+
 class ChunkData {
     constructor(cx, cz) {
         this.cx = cx;
         this.cz = cz;
         this.blocks = new Uint8Array(16 * WORLD_HEIGHT * 16);
-        this.heights = null;      // hauteur de surface par colonne (rempli à la génération)
+        this.heights = null;      
         this.generated = false;
-        this.modified = false;    // modifié par le joueur/fluides -> jamais évincé de la mémoire
-        this.maxY = 0;            // plus haut bloc non vide (accélère le meshing)
+        this.modified = false;    
+        this.maxY = 0;            
     }
 }
 
-// --- DÉFINITION DES 6 FACES D'UN CUBE (ordre : -x, +x, -y, +y, -z, +z), sens anti-horaire ---
+
 const FACE_DEFS = [
     { c: [{ p: [0, 1, 0], u: [0, 1] }, { p: [0, 0, 0], u: [0, 0] }, { p: [0, 1, 1], u: [1, 1] }, { p: [0, 0, 1], u: [1, 0] }] },
     { c: [{ p: [1, 1, 1], u: [0, 1] }, { p: [1, 0, 1], u: [0, 0] }, { p: [1, 1, 0], u: [1, 1] }, { p: [1, 0, 0], u: [1, 0] }] },
@@ -36,7 +36,7 @@ const FACE_UV = FACE_DEFS.map(f => Float32Array.from(f.c.flatMap(c => c.u)));
 const FACE_SHADE = [0.8, 0.8, 0.5, 1.0, 0.65, 0.65];
 const AO_LEVEL = [0.5, 0.68, 0.84, 1.0];
 
-// Pour chaque coin de chaque face : les 3 cellules voisines qui servent à calculer l'AO
+
 const FACE_AO = FACE_DEFS.map((f, fi) => f.c.map(c => {
     const d = FACE_DIR[fi];
     const axes = [0, 1, 2].filter(a => d[a] === 0);
@@ -48,7 +48,7 @@ const FACE_AO = FACE_DEFS.map((f, fi) => f.c.map(c => {
     return Int8Array.from([...o1, ...o2, ...oc]);
 }));
 
-// Types de rendu
+
 const KIND_OPAQUE = 1, KIND_CUTOUT = 2, KIND_FLUID = 3, KIND_PLANT = 4;
 
 class World {
@@ -60,16 +60,16 @@ class World {
             ? String(options.seed)
             : getWorldSeed();
 
-        // Persistance : seules les modifications du joueur sont conservées.
-        // Les chunks restent entièrement générés à partir de la seed.
+        
+        
         this.currentDimensionId = options.dimensionId || 'overworld';
-        this.persistedChanges = new Map(); // dimension -> chunkKey -> Map(blockKey, id)
-        this.pendingChanges = new Map();   // dimension|x|y|z -> {dimension,x,y,z,block_id}
+        this.persistedChanges = new Map(); 
+        this.pendingChanges = new Map();   
         this.applyingPersistedChanges = false;
         this.recordChanges = true;
         this.savedPlayerStates = new Map();
-        this.generatedChunkVersions = new Map(); // dimension -> chunkKey -> generation version
-        this.pendingGeneratedChunks = new Map(); // dimension|cx|cz -> metadata
+        this.generatedChunkVersions = new Map(); 
+        this.pendingGeneratedChunks = new Map(); 
         this.worldStateLoaded = false;
 
         this.chunkSize = 16;
@@ -79,8 +79,8 @@ class World {
         const rd = parseInt(localStorage.getItem('renderDistance'), 10);
         this.renderDistance = Math.max(1, Math.min(8, isFinite(rd) ? rd : 3));
 
-        this.dataChunks = new Map();   // données (blocs)
-        this.chunks = new Map();       // meshes affichés
+        this.dataChunks = new Map();   
+        this.chunks = new Map();       
         this.chunkQueue = [];
         this.dirty = new Set();
         this.activeFluids = new Set();
@@ -95,7 +95,7 @@ class World {
         this.lastPlayerChunkZ = null;
 
         this.dayDuration = 240;
-        this.dayTime = this.dayDuration * 0.2; // on démarre le matin
+        this.dayTime = this.dayDuration * 0.2; 
         this.generationVersion = Number(window.GENERATION_VERSION || 1);
         this.clock = { elapsed: 0 };
         this.underwater = false;
@@ -105,7 +105,7 @@ class World {
             waterShader: localStorage.getItem('fxWaterShader') !== 'false',
         };
 
-        // Tables de propriétés par id de bloc (lookup ultra rapide, pas de Map dans les boucles chaudes)
+        
         this.kindT = new Uint8Array(256).fill(KIND_OPAQUE);
         this.opaqueT = new Uint8Array(256).fill(1);
         this.solidT = new Uint8Array(256).fill(1);
@@ -120,7 +120,7 @@ class World {
         this.tileSpan = 1;
         this.tileAvg = [0x888888];
 
-        this._lc = null; this._lcx = 0; this._lcz = 0;   // cache du dernier chunk lu
+        this._lc = null; this._lcx = 0; this._lcz = 0;   
         this._ch3 = new Array(9).fill(null);
         this._bld = [this._newBuilder(), this._newBuilder(), this._newBuilder()];
 
@@ -134,14 +134,14 @@ class World {
 
         this.fogNear = 20; this.fogFar = 44;
 
-        // --- Ambiance de biome (brouillard/teinte spécifiques, activable/désactivable) ---
+        
         this.shadersEnabled = localStorage.getItem('fxShaders') !== 'false';
-        // Registre de biomes actif : commutable via dimensionRegistry.switchTo() pour changer de dimension
+        
         this.biomeRegistry = (typeof biomeRegistry !== 'undefined') ? biomeRegistry : null;
         this.currentBiomeId = null;
-        this._ambTint = new THREE.Color(1, 1, 1);       // teinte lumière appliquée actuellement (lissée)
+        this._ambTint = new THREE.Color(1, 1, 1);       
         this._ambTintTarget = new THREE.Color(1, 1, 1);
-        this._ambFogMul = 1;                             // multiplicateur de densité de brouillard (lissé)
+        this._ambFogMul = 1;                             
         this._ambFogMulTarget = 1;
         this._ambCheckTimer = 0;
         window.addEventListener('shaders-toggled', (e) => {
@@ -154,7 +154,7 @@ class World {
         this.applyFog();
     }
 
-    // ============ INITIALISATION ASYNCHRONE (textures) ============
+    
 
     async init(onStatus) {
         if (onStatus) onStatus('Chargement des textures...');
@@ -167,7 +167,7 @@ class World {
     }
 
     _collectPaths() {
-        const paths = new Map(); // chemin -> index de tuile (0 = tuile par défaut grise)
+        const paths = new Map(); 
         if (typeof blockRegistry === 'undefined') return paths;
         blockRegistry.getAll().forEach(b => {
             const t = b.textures || {};
@@ -196,7 +196,7 @@ class World {
         this.atlasSize = size;
         this.atlasTile = T;
 
-        const inset = 0.02; // px, évite les débordements entre tuiles
+        const inset = 0.02; 
         this.tileU = new Float32Array(count);
         this.tileV = new Float32Array(count);
         this.tileSpan = (T - 2 * inset) / size;
@@ -223,7 +223,7 @@ class World {
         const drawTile = (t, img) => {
             const x = (t % this.atlasCols) * T, y = Math.floor(t / this.atlasCols) * T;
             if (img) {
-                const s = Math.min(img.naturalWidth, img.naturalHeight); // ignore les bandes animées
+                const s = Math.min(img.naturalWidth, img.naturalHeight); 
                 ctx.drawImage(img, 0, 0, s, s, x, y, T, T);
             } else {
                 ctx.fillStyle = t === 0 ? '#888888' : '#ff00ff';
@@ -237,7 +237,7 @@ class World {
                     r += d[i]; g += d[i + 1]; b += d[i + 2]; n++;
                 }
                 if (n) this.tileAvg[t] = ((r / n) << 16) | ((g / n) << 8) | (b / n);
-            } catch (e) { /* canvas non lisible : couleur par défaut */ }
+            } catch (e) {  }
         };
 
         drawTile(0, null);
@@ -266,7 +266,7 @@ class World {
             this.solidT[id] = (kind === KIND_FLUID || kind === KIND_PLANT) ? 0 : 1;
             this.fluidT[id] = kind === KIND_FLUID ? 1 : 0;
             this.plantT[id] = kind === KIND_PLANT ? 1 : 0;
-            // feuillages "pleins" (une seule texture) : on garde les faces internes (trous du feuillage)
+            
             this.noCullT[id] = (kind === KIND_CUTOUT && t.all) ? 1 : 0;
 
             const pick = (...keys) => {
@@ -281,14 +281,14 @@ class World {
             this.tileT[base + 2] = bottom; this.tileT[base + 3] = top;
             this.tileT[base + 4] = side; this.tileT[base + 5] = side;
         });
-        this.opaqueT[255] = 1; // sentinelle "sous le monde"
+        this.opaqueT[255] = 1; 
     }
 
     getBlockColor(id) {
         return this.tileAvg[this.tileT[id * 6]] || 0x888888;
     }
 
-    // ============ MATÉRIAUX ============
+    
 
     _createWaterShader(tex) {
         const uniforms = THREE.UniformsUtils.merge([
@@ -370,7 +370,7 @@ class World {
         }
     }
 
-    // ============ BROUILLARD (masque le bord du monde) ============
+    
 
     applyFog() {
         const R = this.renderDistance * 16;
@@ -392,7 +392,7 @@ class World {
         this._syncFog();
     }
 
-    // ============ CIEL / NUAGES / JOUR-NUIT ============
+    
 
     initSkyAndClouds() {
         this.cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, fog: false });
@@ -461,21 +461,21 @@ class World {
         }
         const f = 0.3 + 0.7 * light;
 
-        // --- Ambiance de biome : détection (peu coûteuse, throttle à ~3x/s) + lissage ---
+        
         if (this.shadersEnabled && center) {
             this._ambCheckTimer += delta;
             if (this._ambCheckTimer > 0.3) {
                 this._ambCheckTimer = 0;
                 this._updateBiomeAmbianceTarget(Math.floor(center.x), Math.floor(center.z));
             }
-            const lerpSpeed = Math.min(1, delta * 0.8); // transition douce (~1.5s)
+            const lerpSpeed = Math.min(1, delta * 0.8); 
             this._ambTint.lerp(this._ambTintTarget, lerpSpeed);
             this._ambFogMul += (this._ambFogMulTarget - this._ambFogMul) * lerpSpeed;
         }
 
-        // Teinte de biome appliquée sur la couleur du ciel/lumière ambiante
+        
         const t = this._ambTint;
-        const litF = f; // luminosité jour/nuit, appliquée en plus de la teinte
+        const litF = f; 
         let bg = sky;
         if (this.underwater) {
             this._bg.copy(this._under).multiplyScalar(f);
@@ -487,14 +487,14 @@ class World {
         this.scene.background = bg;
         if (this.scene.fog) {
             this.scene.fog.color.copy(bg);
-            // Le biome ne peut que DENSIFIER le brouillard (mul <= 1), jamais révéler des chunks
-            // non générés au-delà de la distance d'affichage réglée par le joueur.
+            
+            
             const mul = this.shadersEnabled ? Math.min(1, this._ambFogMul) : 1;
             this.scene.fog.near = (this.underwater ? 0.5 : this.fogNear) * mul;
             this.scene.fog.far = (this.underwater ? 18 : this.fogFar) * mul;
         }
 
-        const lf = litF * t.r; // luminosité effective des blocs = jour/nuit * teinte biome
+        const lf = litF * t.r; 
         if ((Math.abs(f - this._lastF) > 0.003 || this.shadersEnabled) && this.mats) {
             this._lastF = f;
             this.mats.opaque.color.setRGB(litF * t.r, litF * t.g, litF * t.b);
@@ -513,9 +513,9 @@ class World {
         }
     }
 
-    // Interroge le biome à la position du joueur et met à jour la CIBLE d'ambiance
-    // (le lissage vers cette cible se fait dans updateDayNightCycle).
-    // Un biome n'a rien à faire de particulier : il suffit de ne pas déclarer `ambiance`.
+    
+    
+    
     _updateBiomeAmbianceTarget(x, z) {
         if (!this.biomeRegistry) return;
         const biome = this.biomeRegistry.getBiomeAt(x, z, this.perlin);
@@ -533,7 +533,7 @@ class World {
         }
     }
 
-    // ============ ACCÈS BLOCS ============
+    
 
     getChunkKey(cx, cz) {
         return ((cx & 0xFFFF) << 16) | (cz & 0xFFFF);
@@ -549,7 +549,7 @@ class World {
         return chunk;
     }
 
-    // Lecture avec coordonnées entières (chemin rapide)
+    
     getBlockI(x, y, z) {
         if (y < 0 || y >= WORLD_HEIGHT) return 0;
         const cx = x >> 4, cz = z >> 4;
@@ -595,7 +595,7 @@ class World {
         return !!(c && c.generated);
     }
 
-    // ============ PERSISTANCE DES MODIFICATIONS ============
+    
 
     _changeChunkKey(x, z) {
         return this.getChunkKey(Math.floor(x) >> 4, Math.floor(z) >> 4);
@@ -798,7 +798,7 @@ class World {
         }
     }
 
-    // ============ GÉNÉRATION DU TERRAIN ============
+    
 
     _computeHeight(biome, x, z) {
         return Generation.computeHeight(this, biome, x, z);
@@ -821,7 +821,7 @@ class World {
         Generation.generateTerrainData(this, cx, cz, savedVersion || this.generationVersion);
     }
 
-    // ============ MESHING PAR FACES ============
+    
 
     _newBuilder() {
         return { pos: [], uv: [], col: [], idx: [], top: [], n: 0 };
@@ -885,7 +885,7 @@ class World {
             b.pos.push(ax, y, az, bx, y, bz, ax, y + s, az, bx, y + s, bz);
             b.uv.push(u0, v0, u0 + ts, v0, u0, v0 + ts, u0 + ts, v0 + ts);
             b.col.push(c, c, c, c, c, c, c, c, c, c, c, c);
-            // les deux faces (le feuillage est visible des deux côtés)
+            
             b.idx.push(base, base + 1, base + 2, base + 2, base + 1, base + 3,
                        base, base + 2, base + 1, base + 1, base + 2, base + 3);
             b.n += 4;
@@ -1006,7 +1006,7 @@ class World {
         this.chunks.delete(key);
     }
 
-    // ============ STREAMING DES CHUNKS ============
+    
 
     updateChunks(playerX, playerZ, force = false) {
         const pcx = Math.floor(playerX) >> 4;
@@ -1023,7 +1023,7 @@ class World {
         for (let dx = -rd; dx <= rd; dx++) {
             for (let dz = -rd; dz <= rd; dz++) {
                 const d2 = dx * dx + dz * dz;
-                if (d2 > maxD2) continue; // distance circulaire : ~20% de chunks en moins
+                if (d2 > maxD2) continue; 
                 const cx = pcx + dx, cz = pcz + dz;
                 const key = this.getChunkKey(cx, cz);
                 needed.add(key);
@@ -1038,7 +1038,7 @@ class World {
         }
         for (const key of this.dirty) if (!this.chunks.has(key)) this.dirty.delete(key);
 
-        // Libère la mémoire des chunks lointains non modifiés (ils seront régénérés à l'identique)
+        
         const keep = rd + 2;
         for (const [key, d] of this.dataChunks) {
             if (!d.modified && (Math.abs(d.cx - pcx) > keep || Math.abs(d.cz - pcz) > keep)) {
@@ -1048,7 +1048,7 @@ class World {
         this._lc = null;
     }
 
-    // Une unité de travail : régénère un chunk sale, génère un terrain manquant, ou construit un mesh
+    
     _processOne() {
         if (this.dirty.size) {
             const key = this.dirty.values().next().value;
@@ -1075,7 +1075,7 @@ class World {
         return true;
     }
 
-    // Budget de temps par frame (ms) pour ne jamais faire chuter les FPS
+    
     processQueue(budget = 4) {
         const t0 = performance.now();
         do {
@@ -1096,7 +1096,7 @@ class World {
         }
     }
 
-    // Cherche un point d'apparition sec et dégagé, le plus proche possible de (0,0)
+    
     findSpawn(maxR = 28) {
         const sea = this.seaLevel;
         for (let r = 0; r <= maxR; r++) {
@@ -1114,7 +1114,7 @@ class World {
         return { x: 0.5, y: this.getTerrainHeight(0, 0) + 3, z: 0.5 };
     }
 
-    // ============ RAYON DANS LES VOXELS (DDA) : remplace le Raycaster Three.js ============
+    
 
     raycast(ox, oy, oz, dx, dy, dz, maxDist, out) {
         let x = Math.floor(ox), y = Math.floor(oy), z = Math.floor(oz);
@@ -1142,7 +1142,7 @@ class World {
         return false;
     }
 
-    // ============ FLUIDES ============
+    
 
     _packFluid(x, y, z) {
         return ((x + 1048576) * 2097152 + (z + 1048576)) * 128 + y;
@@ -1173,16 +1173,16 @@ class World {
         if (time - this.lastFluidUpdate < 300 || this.activeFluids.size === 0) return;
         this.lastFluidUpdate = time;
 
-        // Au plus 200 cellules par tick : l'eau coule progressivement sans jamais bloquer le jeu
+        
         const batch = [];
         for (const key of this.activeFluids) {
             batch.push(key);
             if (batch.length >= 200) break;
         }
 
-        // Les fluides font partie de l'état persistant du monde : leurs déplacements
-        // sont donc enregistrés comme des changements de blocs, mais toujours en mémoire
-        // puis envoyés par lots (jamais une requête SQLite par tick).
+        
+        
+        
         const previousRecordChanges = this.recordChanges;
         this.recordChanges = true;
         try {
@@ -1211,7 +1211,7 @@ class World {
         }
     }
 
-    // ============ ÉDITION DE BLOCS ============
+    
 
     rebuildAround(x, z) {
         const cx = x >> 4, cz = z >> 4, lx = x & 15, lz = z & 15;
@@ -1234,10 +1234,10 @@ class World {
 
         this.setBlock(x, y, z, 0);
 
-        // Une plante posée dessus disparaît avec son support
+        
         if (this.plantT[this.getBlockI(x, y + 1, z)]) this.setBlock(x, y + 1, z, 0);
 
-        // L'eau voisine vient combler le trou
+        
         const nb = [[x + 1, y, z], [x - 1, y, z], [x, y + 1, z], [x, y - 1, z], [x, y, z + 1], [x, y, z - 1]];
         for (const [nx, ny, nz] of nb) {
             if (this.fluidT[this.getBlockI(nx, ny, nz)]) this.activeFluids.add(this._packFluid(nx, ny, nz));

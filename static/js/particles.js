@@ -67,7 +67,7 @@ class ParticleManager {
             p.mesh.position.y += p.vy * delta;
             p.mesh.position.z += p.vz * delta;
 
-            // Réduction progressive de la taille des particules
+            
             const s = Math.max(0.01, (p.life / p.maxLife));
             p.mesh.scale.set(s, s, s);
         }

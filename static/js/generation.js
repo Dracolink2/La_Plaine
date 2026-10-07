@@ -1,15 +1,15 @@
-// ============================================================================
-// generation.js — Bibliothèque de génération du monde
-// V0.2.0.0
-// - Seed déterministe
-// - Bruit Perlin
-// - Hauteur du terrain
-// - Génération des arbres
-// - Génération des chunks de terrain + décorations des biomes
-//
-// Ce fichier ne gère PAS les meshes, le streaming ou le rendu.
-// World.js lui fournit le monde et lui demande simplement de générer.
-// ============================================================================
+
+
+
+
+
+
+
+
+
+
+
+
 
 function hashSeed(seed) {
     seed = String(seed ?? '0');
@@ -51,7 +51,7 @@ class PerlinNoise {
         const random = new SeededRandom(seed);
         for (let i = 0; i < 256; i++) this.p[i] = i;
 
-        // Fisher-Yates déterministe : même seed = même permutation.
+        
         for (let i = 255; i > 0; i--) {
             const j = Math.floor(random.next() * (i + 1));
             const tmp = this.p[i];
@@ -94,19 +94,19 @@ class PerlinNoise {
 }
 
 const Generation = {
-    // Version indépendante de la version du jeu : elle identifie la génération historique.
+    
     GENERATION_VERSION: 1,
 
-    // ========================================================================
-    // STRUCTURES
-    // ========================================================================
-    // Les structures restent de simples fichiers chargés dans
-    // window.BiomeStructures. Aucun registre global n'est nécessaire :
-    // le biome choisit directement celle qu'il veut utiliser.
-    //
-    // Une structure est testée au centre d'un chunk uniquement. Cela évite
-    // les doublons, limite les calculs et garantit qu'une petite structure
-    // reste entièrement dans son chunk.
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     trySpawnStructure(world, structure, x, surfaceY, z, options = {}) {
         if (!world || !structure || typeof structure.place !== 'function') return false;
 
@@ -132,7 +132,7 @@ const Generation = {
             ? Math.max(0, structure.flatTolerance)
             : 0;
 
-        // Vérifie le terrain sous toute l'emprise de la structure.
+        
         let minY = Infinity;
         let maxY = -Infinity;
         let validSurface = true;
@@ -157,7 +157,7 @@ const Generation = {
         if (!validSurface || (maxY - minY) > tolerance) return false;
         if (Math.max(width, depth) < minFlatLength) return false;
 
-        // Le biome peut demander que la structure reste entièrement dans son biome.
+        
         if (options.sameBiome && world.biomeRegistry?.getBiomeAt) {
             const biomeId = options.biomeId || null;
             for (let dx = 0; dx < width; dx++) {
@@ -170,7 +170,7 @@ const Generation = {
             }
         }
 
-        // Toute la structure doit être libre avant d'être posée.
+        
         for (let dx = 0; dx < width; dx++) {
             for (let dz = 0; dz < depth; dz++) {
                 for (let dy = 0; dy < height; dy++) {
@@ -229,9 +229,9 @@ const Generation = {
         const chunk = world.getChunkAt(cx, cz, true);
         if (chunk.generated) return;
 
-        // Pour l'instant V1 est la seule génération disponible.
-        // L'API est déjà versionnée afin que les futures versions puissent
-        // conserver leurs anciens générateurs sans toucher aux chunks existants.
+        
+        
+        
         const version = Number(requestedVersion) || this.GENERATION_VERSION;
         if (version !== this.GENERATION_VERSION) {
             console.warn(`Génération historique V${version} indisponible, utilisation de V${this.GENERATION_VERSION}.`);
@@ -268,9 +268,9 @@ const Generation = {
         }
         chunk.maxY = maxY;
 
-        // Structures : une seule tentative au centre du chunk, avant les
-        // décorations classiques. Cela donne priorité à la structure et évite
-        // qu'un arbre généré quelques lignes plus tôt ne bloque son apparition.
+        
+        
+        
         const structureX = startX + 8;
         const structureZ = startZ + 8;
         const structureSurfaceY = heights[(8 << 4) | 8];
@@ -283,7 +283,7 @@ const Generation = {
             );
         }
 
-        // Marge de 2 blocs : évite de générer une décoration trop proche d'un bord.
+        
         for (let x = startX + 2; x < startX + 14; x++) {
             for (let z = startZ + 2; z < startZ + 14; z++) {
                 const surfaceY = heights[((z - startZ) << 4) | (x - startX)];
@@ -304,7 +304,7 @@ const Generation = {
     }
 };
 
-// API globale volontairement simple : world.js et les biomes peuvent l'utiliser.
+
 window.Generation = Generation;
 window.GENERATION_VERSION = Generation.GENERATION_VERSION;
 window.PerlinNoise = PerlinNoise;

@@ -1,6 +1,6 @@
-// ============================================================================
-//  main.js — La Plaine (version optimisée avec système de Chat & Commandes)
-// ============================================================================
+
+
+
 (function () {
     const loadingText = document.getElementById('loading-text');
     const setStatus = (t) => { if (loadingText) loadingText.textContent = t; };
@@ -11,7 +11,7 @@
     });
 
     async function main() {
-        // --- 0. MONDE SÉLECTIONNÉ ---
+        
         const params = new URLSearchParams(window.location.search);
         const worldId = params.get('world');
 
@@ -45,7 +45,7 @@
         const worldStateInfo = await stateResponse.json();
         const generatedChunksInfo = await chunksResponse.json();
 
-        // --- 1. SCÈNE ET RENDU ---
+        
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87ceeb);
         scene.fog = new THREE.Fog(0x87ceeb, 20, 44);
@@ -61,8 +61,8 @@
         canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;display:block;z-index:0;';
         document.body.appendChild(canvas);
 
-        // --- RÉSOLUTION : réglage du menu + adaptation automatique en mode "auto" ---
-        let autoScale = 1; // ne fait que baisser si le PC n'arrive pas à tenir les FPS
+        
+        let autoScale = 1; 
         function applyResolution() {
             const setting = localStorage.getItem('gameResolution') || 'auto';
             const fixed = { '480p': 480, '720p': 720, '1080p': 1080, '2k': 1440, '4k': 2160 }[setting];
@@ -75,12 +75,12 @@
         applyResolution();
         window.addEventListener('resize', applyResolution);
 
-        // Overlay "sous l'eau" : un simple div translucide
+        
         const waterOverlay = document.createElement('div');
         waterOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(20,80,170,0.32);pointer-events:none;display:none;z-index:12;';
         document.body.appendChild(waterOverlay);
 
-        // --- 2. MONDE, PARTICULES ET JOUEUR ---
+        
         setStatus('Chargement des textures...');
         const world = new World(scene, {
             worldId: Number(worldInfo.id),
@@ -110,7 +110,7 @@
         const cloudToggleGame = document.getElementById('cloud-toggle-game');
         const waterShaderToggleGame = document.getElementById('water-shader-toggle-game');
 
-        // --- 2.5 INTERFACE ET LOGIQUE DU CHAT / COMMANDES ---
+        
         const chatContainer = document.createElement('div');
         chatContainer.style.cssText = `
             position: fixed;
@@ -195,7 +195,7 @@
 
             const lower = trimmed.toLowerCase();
 
-            // Commande : list biomes
+            
             if (lower === 'list biomes') {
                 let biomes = [];
                 if (typeof biomeRegistry !== 'undefined' && biomeRegistry) {
@@ -214,7 +214,7 @@
                 return;
             }
 
-            // Commande : TP biome <nom>
+            
             if (lower.startsWith('tp biome ')) {
                 const targetBiomeName = trimmed.substring(9).trim();
                 if (!targetBiomeName) {
@@ -224,7 +224,7 @@
 
                 addChatMessage(`Recherche du biome "${targetBiomeName}"...`, '#ffff55');
 
-                // Recherche progressive en spirale autour du joueur
+                
                 let found = false;
                 const startX = Math.floor(player.position.x);
                 const startZ = Math.floor(player.position.z);
@@ -242,7 +242,7 @@
                             const biomeName = (typeof biomeAtPos === 'string' ? biomeAtPos : (biomeAtPos && biomeAtPos.name)) || '';
 
                             if (biomeName.toLowerCase() === targetBiomeName.toLowerCase()) {
-                                // Biome trouvé ! Téléportation
+                                
                                 let surfaceY = 64;
                                 if (typeof world.getTerrainHeight === 'function') {
                                     surfaceY = world.getTerrainHeight(testX, testZ);
@@ -291,7 +291,7 @@
             }
         });
 
-        // --- 3. CHARGEMENT DU MONDE / POSITION DU JOUEUR ---
+        
         const preRadius = Math.min(world.renderDistance, 2);
         const savedPlayer = world.getSavedPlayerState(initialDimensionId);
         let preloadX = 0, preloadZ = 0;
@@ -316,8 +316,8 @@
         player.updateCameraPosition();
         world.updateChunks(player.position.x, player.position.z, true);
 
-        // Lors d'un changement de dimension, seule la position de cette dimension
-        // est restaurée : l'inventaire/santé restent globaux au joueur.
+        
+        
         world.onDimensionChanged = (dimensionId) => {
             const state = world.getSavedPlayerState(dimensionId);
             if (!state) return;
@@ -346,7 +346,7 @@
             }
         }
 
-        // Sauvegardes périodiques : aucune requête SQLite à chaque clic.
+        
         const saveEverything = () => {
             savePlayerState();
             world.flushChanges();
@@ -371,7 +371,7 @@
         if (loadingOverlay) loadingOverlay.style.display = 'none';
         if (clickOverlay) clickOverlay.style.display = 'flex';
 
-        // --- 4. OVERLAYS & CONTRÔLES ---
+        
         if (cloudToggleGame) {
             cloudToggleGame.checked = localStorage.getItem('showClouds') !== 'false';
             cloudToggleGame.addEventListener('change', (e) => {
@@ -399,7 +399,7 @@
             });
             player.controls.addEventListener('unlock', () => {
                 mouseHeld = -1;
-                // Si le chat est ouvert, on n'affiche pas le menu pause
+                
                 if (pauseOverlay && !player.inventory.isOpen && !isChatOpen) pauseOverlay.style.display = 'flex';
             });
         }
@@ -407,7 +407,7 @@
             if (!e.detail.open && player.controls && !isChatOpen) player.controls.lock();
         });
 
-        // --- 5. INTERACTION AVEC LES BLOCS ---
+        
         const REACH = 6;
         const hit = { x: 0, y: 0, z: 0, id: 0, nx: 0, ny: 0, nz: 0 };
         const dir = new THREE.Vector3();
@@ -458,7 +458,7 @@
             world.addBlock({ x: px, y: py, z: pz }, type);
             if (window.soundManager) window.soundManager.playBlockPlace(type);
 
-            // Si on vient de poser un bloc de portail, on regarde si un cadre complet vient de se former
+            
             if (window.dimensionRegistry && type === window.dimensionRegistry.PORTAL_FRAME_ID) {
                 window.dimensionRegistry.tryActivatePortal(world, px, py, pz);
             }
@@ -481,7 +481,7 @@
         window.addEventListener('mouseup', (e) => { if (e.button === mouseHeld) mouseHeld = -1; });
         window.addEventListener('contextmenu', (e) => e.preventDefault());
 
-        // --- 6. BOUCLE PRINCIPALE ---
+        
         const fpsVal = document.getElementById('fps-val');
         const savedLimit = localStorage.getItem('fpsLimit') || 'max';
         const limit = savedLimit === 'max' ? 0 : parseInt(savedLimit, 10) || 0;
