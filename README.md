@@ -1,5 +1,9 @@
 # La Plaine 
-c'est y est : le V0.2.2.0 
-On a ajouté les structures , enfin , de quoi les mettre , bientôt les entités !!!
-Nous pensons que après la V0.2 , les mises à jours seront plus lente , mais plus grosses ( mises à jours plus espacées mais avec plus de contenus ) , après , je ne sais pas trop un truc : on avance pas un peu trop vite là ? , enfin , c'est juste la version 0.2 là , même pas la V1 , et on as déjà attends de choses là , et le projet à pris 1 ans à être fait , et encore , seulement 1 mois que je travail dessus d façon stable sans réinitialiser le projet .
-Merci encore pour tout le support !
+C'est la V02.3.0 !!!!
+Alors , nous venons d'ajouter quelques blocks , mais aussi nous avons améliorer une structure qui était présente dans la V0.2.2.0.
+
+Nous pouvons vous dire le plan de la V0.2.3.0 maintenant : MAIS , nous allons plutôt faire un nouveau truc , avec seulement un seul fichier , il vas contenir tout ce qui est prévus pour les futures updates !!!!!
+Il sera update dès que possible .
+
+Merci beaucoup pour votre support , mais nous tenons à vous informer que les updates vont prendre plus de temps , car nous faisons pas assez de chose en très peu de temps quand même , là c'est juste un ajout de block simple et amélioration de une seule structure .
+Mais sinon , le prochaine update est très grosse , et vas apporter beaucoup de gameplay à ce jeu !!!
