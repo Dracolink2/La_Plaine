@@ -4,10 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Plaine V0.1.0.0 - En Jeu</title>
+    <title>La Plaine V0.2.3.0 - En Jeu</title>
     <link rel="stylesheet" href="/static/css/game.css">
-
-```
 <style>
     #loading-overlay {
         position: fixed;
@@ -52,14 +50,12 @@
         color: #ccc;
     }
 </style>
-```
 
 </head>
 
 <body>
 
-```
-<!-- Écran de chargement -->
+
 <div id="loading-overlay">
     <div class="loading-box">
         <h2>Chargement du Monde...</h2>
@@ -80,10 +76,10 @@
     FPS: <span id="fps-val">0</span>
 </div>
 
-<!-- BARRE DE VIE -->
+
 <div id="health-container"></div>
 
-<!-- HOTBAR -->
+
 <div id="hotbar-container">
     <div class="hotbar-slot active" id="slot-0">
         <span class="slot-key">1</span>
@@ -140,7 +136,7 @@
     </div>
 </div>
 
-<!-- INVENTAIRE COMPLET -->
+
 <div id="inventory-panel" style="display: none;">
     <div class="inv-box">
         <h2>Inventaire</h2>
@@ -231,22 +227,22 @@
     </a>
 </div>
 
-<!-- Bibliothèques -->
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
 
-<!-- Registre de shaders -->
+
 <script src="/static/js/shaders/register.js"></script>
 
-<!-- Registre de blocs -->
+
 <script src="/static/js/blocks/register.js"></script>
 
-<!-- Registre de dimensions -->
+
 <script src="/static/js/dimensions/register.js"></script>
 <script src="/static/js/dimensions/portal-decoration.js"></script>
 
-<!-- Chargeur dynamique de modules -->
+
 <script>
     function loadScript(url) {
         return new Promise((resolve, reject) => {
@@ -281,25 +277,12 @@
             const res = await fetch('/api/modules');
             const modules = await res.json();
 
-            /*
-             * Charger tous les blocs trouvés
-             * dans static/js/blocks/
-             */
             for (const file of modules.blocks) {
                 await loadScript(
                     `/static/js/blocks/${file}`
                 );
             }
 
-            /*
-             * Charger chaque dimension :
-             *
-             * 1. registre des biomes
-             * 2. biomes
-             * 3. access.js
-             *
-             * access.js enregistre ensuite la dimension.
-             */
             for (const dim of modules.dimensions) {
                 const base =
                     `/static/js/dimensions/${dim.id}`;
@@ -314,9 +297,6 @@
                     );
                 }
 
-                // Les structures ne possèdent volontairement pas de registre.
-                // Elles sont simplement préchargées puis choisies directement
-                // par les biomes lors de la génération.
                 for (const file of (dim.structures || [])) {
                     await loadScript(
                         `${base}/biomes/structures/${file}`
@@ -333,13 +313,6 @@
                     "Initialisation du moteur de jeu...";
             }
 
-            /*
-             * IMPORTANT :
-             * generation.js doit être chargé AVANT world.js.
-             *
-             * world.js utilise les fonctions de génération
-             * et l'API window.Generation.
-             */
             await loadScript(
                 '/static/js/generation.js'
             );
@@ -381,8 +354,6 @@
         }
     }
 
-    // Lancer le chargement au démarrage
-    // de la page.
     initPluginsAndEngine();
 </script>
 

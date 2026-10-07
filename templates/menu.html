@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Plaine V0.2.0.0 - Menu</title>
+    <title>La Plaine V0.2.2.0 - Menu</title>
     <link rel="stylesheet" href="/static/css/menu.css">
 </head>
 <body>
@@ -20,7 +20,7 @@
             <button id="btn-controls" class="btn-menu">COMMANDES</button>
         </div>
 
-        <!-- Sélection des mondes -->
+        
         <div id="worlds-modal" class="modal world-modal">
             <div class="modal-header">
                 <h3>Sélection du monde</h3>
@@ -37,7 +37,7 @@
             </div>
         </div>
 
-        <!-- Création d'un monde -->
+        
         <div id="create-world-modal" class="modal world-modal">
             <div class="modal-header">
                 <h3>Créer un monde</h3>
@@ -63,7 +63,7 @@
             </div>
         </div>
 
-        <!-- Options / Paramètres -->
+        
         <div id="settings-modal" class="modal">
             <h3>Monde & Performances</h3>
 
@@ -138,7 +138,7 @@
             </div>
         </div>
 
-        <!-- Commandes -->
+        
         <div id="controls-modal" class="modal">
             <h3>Contrôles</h3>
             <ul>
@@ -154,7 +154,7 @@
         </div>
     </div>
 
-    <div class="version-tag">La Plaine · V0.2.0.0</div>
+    <div class="version-tag">La Plaine · V0.2.3.0</div>
 
     <script src="/static/js/sound.js"></script>
     <script>
@@ -334,7 +334,6 @@
             controlsModal.style.display = (controlsModal.style.display === 'block') ? 'none' : 'block';
         });
 
-        // Réglages audio
         const volMasterInput = document.getElementById('vol-master');
         const volMusicInput = document.getElementById('vol-music');
         const volSfxInput = document.getElementById('vol-sfx');
@@ -365,7 +364,6 @@
             soundManager.setSfxVolume(e.target.value / 100);
         });
 
-        // Réglages existants
         const renderInput = document.getElementById('render-distance');
         const renderVal = document.getElementById('render-val');
         const resSelect = document.getElementById('resolution-select');
@@ -413,7 +411,6 @@
             localStorage.setItem('fxShaders', e.target.checked);
         });
 
-        // Fond d'écran
         const textures = [
             '/static/textures/dirt.png',
             '/static/textures/grass_side.png',
@@ -421,7 +418,8 @@
             '/static/textures/stone.png',
             '/static/textures/oak_side.png',
             '/static/textures/oak_top.png',
-            '/static/textures/oak_leaves.png'
+            '/static/textures/oak_leaves.png',
+            '/static/textures/Fleur-Nyamée.png'
         ];
 
         const bgSlideshow = document.getElementById('bg-slideshow');
