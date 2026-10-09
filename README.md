@@ -16,7 +16,16 @@ La Plaine vas atteindre un nouveau niveau avec :
 - ajout de l'équivalent des Farlands
 - ajout des armures
 - amélioration de la physique des liquides 
-- mais bien sûr : ajout de la physique de certains blocks ( sable et gravier , mais autres aussi )
+- ajout de la physique de certains blocks ( sable et gravier , mais autres aussi )
+- Réparation de la sauvegarde
+- optimisations plus fortes
+- ajout du système de faim donc
+- ajout de la table de craft
+- ajout de grottes
+- amélioration du système jour/nuit
+- ajout de contenus divers ( biomes , blocks , structures , et autres !)
+en gros , cette mise à jour est énorme , elle sortiras dans un peu longtemps c'est vrai , mais au moins , une fois cette mise à jour faite : le jeu peut enfin devenir un très bon jeu jouable pour le fun !!!!
+Cette version sortiras entre le 09/10/2026 et la semaine qui suit .
 
 # 0.2.5.0 :
 La Plaine vas encore une fois changer de niveau , en ajoutant une vraie dimension !! ( et aussi une personnalisation simple du skin )
