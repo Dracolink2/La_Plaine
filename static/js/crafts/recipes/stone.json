@@ -1,0 +1,40 @@
+[
+  {
+    "id": "stone_bricks",
+    "name": "Pierre taillée",
+    "grid": 2,
+    "pattern": [
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "output": {
+      "id": 46,
+      "count": 4
+    }
+  },
+  {
+    "id": "iron_ingot",
+    "name": "Lingot de fer",
+    "grid": 2,
+    "pattern": [
+      [
+        1103,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1104,
+      "count": 1
+    }
+  }
+]

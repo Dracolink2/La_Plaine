@@ -1,182 +1,270 @@
 * {
     box-sizing: border-box;
     user-select: none;
+    image-rendering: pixelated;
 }
 
-body {
+html, body {
     margin: 0;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #000;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #000;
+    color: #fff;
 }
+
 
 #crosshair {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 8px;
-    height: 8px;
-    background-color: rgba(255, 255, 255, 0.8);
-    border: 1px solid black;
+    width: 9px;
+    height: 9px;
     transform: translate(-50%, -50%);
     pointer-events: none;
-    border-radius: 50%;
     z-index: 10;
+    background: transparent;
+    border: 2px solid #fff;
+    box-shadow: 1px 1px 0 #000, -1px -1px 0 #000;
 }
 
-/* Compteur FPS */
+
 #fps-counter {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    padding: 6px 12px;
-    background: rgba(0, 0, 0, 0.6);
-    color: #00FF00;
-    font-size: 0.9rem;
-    font-weight: bold;
-    border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    top: 6px;
+    left: 6px;
+    padding: 3px 6px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-family: monospace;
+    font-size: 12px;
+    font-weight: normal;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 0;
     z-index: 15;
     pointer-events: none;
+    text-shadow: 1px 1px 0 #000;
 }
 
-/* BARRE DE VIE */
+
 #health-container {
     position: absolute;
-    bottom: 90px;
+    bottom: 78px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 4px;
+    gap: 2px;
     z-index: 15;
     pointer-events: none;
 }
 
 .heart-icon {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     background-image: url('/static/textures/hearth.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
     image-rendering: pixelated;
-    transition: opacity 0.2s ease;
+    transition: none;
 }
 
-/* HOTBAR & INVENTAIRE */
+
 #hotbar-container {
     position: absolute;
-    bottom: 20px;
+    bottom: 8px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 6px;
-    background: rgba(0, 0, 0, 0.65);
-    padding: 6px;
-    border-radius: 8px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    gap: 0;
+    padding: 4px;
+    background: #8b8b8b;
+    border: 2px solid #373737;
+    box-shadow:
+        inset 2px 2px 0 #c6c6c6,
+        inset -2px -2px 0 #555,
+        0 2px 0 #111;
+    border-radius: 0;
     z-index: 15;
 }
 
 .hotbar-slot {
     position: relative;
-    width: 52px;
-    height: 52px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
+    width: 44px;
+    height: 44px;
+    margin: 1px;
+    background: #707070;
+    border: 2px solid #373737;
+    box-shadow:
+        inset 2px 2px 0 #555,
+        inset -2px -2px 0 #a5a5a5;
+    border-radius: 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    color: white;
+    color: #fff;
     font-weight: bold;
-    font-size: 0.85rem;
+    font-size: 11px;
+    text-shadow: 1px 1px 0 #000;
 }
 
 .hotbar-slot.active {
-    border-color: #4CAF50;
-    background: rgba(76, 175, 80, 0.25);
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.6);
+    margin: 0;
+    width: 46px;
+    height: 46px;
+    border: 2px solid #fff;
+    background: #8b8b8b;
+    box-shadow:
+        inset 2px 2px 0 #c6c6c6,
+        inset -2px -2px 0 #555,
+        0 0 0 1px #222;
 }
 
 .hotbar-slot .slot-key {
     position: absolute;
     top: 2px;
-    left: 4px;
-    font-size: 0.7rem;
-    color: #aaa;
+    left: 3px;
+    font-size: 9px;
+    color: #ddd;
+    text-shadow: 1px 1px 0 #000;
 }
 
 .hotbar-slot .slot-name {
-    font-size: 0.75rem;
+    font-size: 9px;
     text-align: center;
     word-break: break-word;
     line-height: 1;
     padding: 2px;
+    max-width: 40px;
 }
 
 .hotbar-slot .slot-count {
     position: absolute;
-    bottom: 2px;
-    right: 4px;
-    font-size: 0.8rem;
+    bottom: 1px;
+    right: 3px;
+    font-size: 11px;
     color: #fff;
     font-weight: bold;
-    text-shadow: 1px 1px 2px #000;
+    text-shadow: 2px 2px 0 #000;
 }
 
-/* Écrans overlay */
-#click-overlay, #pause-overlay {
+
+#chat-container {
+    position: fixed;
+    bottom: 8px;
+    left: 8px;
+    width: 380px;
+    max-height: 250px;
+    display: flex;
+    flex-direction: column;
+    z-index: 20;
+    font-family: monospace;
+    font-size: 13px;
+    pointer-events: none;
+}
+
+#chat-logs {
+    flex: 1;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    padding: 5px;
+    border: 0;
+    border-radius: 0;
+    margin-bottom: 4px;
+    text-shadow: 1px 1px 0 #000;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 200px;
+}
+
+#chat-input {
+    width: 100%;
+    padding: 6px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #aaa;
+    color: #fff;
+    border-radius: 0;
+    outline: none;
+    display: none;
+    pointer-events: auto;
+    box-sizing: border-box;
+    font-family: monospace;
+}
+
+
+#click-overlay,
+#pause-overlay {
     position: absolute;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(0, 0, 0, 0.72);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     z-index: 20;
-    color: white;
+    color: #fff;
 }
 
-#click-overlay h2, #pause-overlay h2 {
-    font-size: 2.5rem;
-    margin-bottom: 20px;
-    text-shadow: 2px 2px 4px #000;
+#click-overlay h2,
+#pause-overlay h2 {
+    font-size: 30px;
+    margin-bottom: 18px;
+    font-weight: bold;
+    text-shadow: 3px 3px 0 #000;
 }
+
 
 .btn-pause {
-    padding: 12px 24px;
-    font-size: 1rem;
+    padding: 10px 18px;
+    font-size: 16px;
     font-weight: bold;
-    color: white;
-    background-color: #333;
-    border: 2px solid #555;
-    border-radius: 6px;
+    color: #fff;
+    background: #707070;
+    border: 2px solid #2b2b2b;
+    box-shadow:
+        inset 2px 2px 0 #aaa,
+        inset -2px -2px 0 #444;
+    border-radius: 0;
     cursor: pointer;
-    margin: 6px;
+    margin: 5px;
     width: 260px;
+    min-height: 42px;
     text-align: center;
     text-decoration: none;
-    transition: all 0.2s ease;
+    text-shadow: 2px 2px 0 #222;
+    transition: none;
 }
 
 .btn-pause:hover {
-    background-color: #4CAF50;
-    border-color: #45a049;
-    transform: scale(1.02);
+    background: #858585;
+    border-color: #fff;
+    box-shadow:
+        inset 2px 2px 0 #c8c8c8,
+        inset -2px -2px 0 #555;
+    transform: none;
 }
 
-/* PANNEAU D'INVENTAIRE COMPLET (touche E) */
+.btn-pause:active {
+    background: #5f5f5f;
+    box-shadow:
+        inset 2px 2px 0 #333,
+        inset -2px -2px 0 #999;
+}
+
+
 #inventory-panel {
     position: absolute;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.55);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -184,77 +272,115 @@ body {
 }
 
 .inv-box {
-    background: rgba(20, 20, 20, 0.95);
-    border: 2px solid #4CAF50;
-    border-radius: 10px;
-    padding: 24px 28px;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
-    color: white;
+    background: #c6c6c6;
+    border: 2px solid #111;
+    border-radius: 0;
+    padding: 12px;
+    box-shadow:
+        inset 2px 2px 0 #fff,
+        inset -2px -2px 0 #555,
+        0 4px 0 #111;
+    color: #111;
     text-align: center;
     max-width: 520px;
 }
 
 .inv-box h2 {
-    margin: 0 0 6px 0;
-    color: #4CAF50;
-    text-shadow: 2px 2px 4px #000;
+    margin: 0 0 5px 0;
+    color: #222;
+    font-size: 20px;
+    text-shadow: 1px 1px 0 #eee;
 }
 
 .inv-hint {
-    margin: 0 0 16px 0;
-    font-size: 0.8rem;
-    color: #aaa;
+    margin: 0 0 12px 0;
+    font-size: 11px;
+    color: #333;
 }
 
 #inventory-grid {
     display: grid;
-    grid-template-columns: repeat(9, 48px);
-    gap: 6px;
+    grid-template-columns: repeat(9, 44px);
+    gap: 2px;
     justify-content: center;
 }
 
 .inv-slot {
     position: relative;
-    width: 48px;
-    height: 48px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
+    width: 44px;
+    height: 44px;
+    background: #8b8b8b;
+    border: 2px solid #373737;
+    box-shadow:
+        inset 2px 2px 0 #555,
+        inset -2px -2px 0 #c6c6c6;
+    border-radius: 0;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: grab;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    transition: none;
 }
 
 .inv-slot.filled {
-    background: rgba(255, 255, 255, 0.14);
+    background: #8b8b8b;
 }
 
 .inv-slot:hover {
-    border-color: #4CAF50;
+    border-color: #fff;
+    box-shadow:
+        inset 2px 2px 0 #c6c6c6,
+        inset -2px -2px 0 #555;
 }
 
-/* Petit séparateur visuel entre l'inventaire principal (27) et la hotbar (9) */
 .inv-slot-hotbar {
-    border-color: rgba(76, 175, 80, 0.45);
+    border-color: #555;
 }
 
 .inv-slot-name {
-    font-size: 0.62rem;
+    font-size: 9px;
     text-align: center;
     word-break: break-word;
     line-height: 1;
     padding: 2px;
-    color: white;
+    color: #fff;
+    text-shadow: 1px 1px 0 #000;
 }
 
 .inv-slot-count {
     position: absolute;
-    bottom: 2px;
-    right: 4px;
-    font-size: 0.75rem;
+    bottom: 1px;
+    right: 3px;
+    font-size: 11px;
     color: #fff;
     font-weight: bold;
-    text-shadow: 1px 1px 2px #000;
+    text-shadow: 2px 2px 0 #000;
 }
+
+
+#death-overlay {
+    font-family: Arial, Helvetica, sans-serif;
+    color: #fff;
+    text-align: center;
+    text-shadow: 3px 3px 0 #000;
+}
+
+
+#inventory-panel .inv-box { max-width: min(900px, 96vw); max-height: 92vh; overflow-y: auto; }
+#crafting-panel { margin-top: 16px; padding-top: 12px; border-top: 2px solid #777; text-align: left; }
+#crafting-panel h3 { margin: 0 0 8px; }
+#crafting-recipes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; max-height: 220px; overflow-y: auto; }
+.craft-recipe { padding: 8px; background: #777; color: white; border: 2px solid #333; cursor: pointer; text-align: left; font-size: 12px; }
+.craft-recipe:disabled { opacity: .45; cursor: not-allowed; }
+#crafting-message { font-size: 12px; margin: 8px 0 0; color: #333; }
+#death-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(65,0,0,.88); color: white; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+#death-overlay h2 { font-size: 42px; margin-bottom: 8px; }
+#damage-vignette { position: fixed; inset: 0; z-index: 14; pointer-events: none; opacity: 0; box-shadow: inset 0 0 100px 28px rgba(220,0,0,.8); }
+#damage-vignette.active { animation: damage-flash .35s ease-out; }
+@keyframes damage-flash { 0% { opacity: .95; } 100% { opacity: 0; } }
+@media (max-width: 650px) { #crafting-recipes { grid-template-columns: 1fr; } #inventory-grid { grid-template-columns: repeat(9, minmax(28px, 1fr)); } .inv-slot { width: 100%; height: 34px; } }
+
+.craft-recipe { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.craft-recipe-label { flex: 1; }
+.craft-grid-preview { display: grid; gap: 2px; flex-shrink: 0; }
+.craft-grid-cell { width: 20px; height: 20px; background-color: #555; background-size: contain; background-position: center; background-repeat: no-repeat; border: 1px solid #222; color: white; font-size: 9px; display: grid; place-items: center; }

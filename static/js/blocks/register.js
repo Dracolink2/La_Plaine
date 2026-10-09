@@ -1,4 +1,4 @@
-// static/js/blocks/register.js
+
 class BlockRegistry {
     constructor() {
         this.blocks = new Map();
@@ -17,11 +17,15 @@ class BlockRegistry {
             transparent: Boolean(blockData.transparent),
             alphaTest: blockData.alphaTest || 0,
             isPlant: Boolean(blockData.isPlant),
-            // Extensions Fluides & Lumière
+            
             isFluid: Boolean(blockData.isFluid),
-            viscosity: blockData.viscosity || 1, // Vitesse d'écoulement (ex: Eau = 1, Lave = 3)
-            lightLevel: blockData.lightLevel || 0, // Niveau de lumière émis (0 à 15)
-            emitColor: blockData.emitColor || 0xffffff
+            viscosity: blockData.viscosity || 1, 
+            lightLevel: blockData.lightLevel || 0, 
+            emitColor: blockData.emitColor || 0xffffff,
+            drop: blockData.drop === undefined ? (blockData.isFluid ? null : blockData.id) : blockData.drop,
+            type: blockData.type || null,
+            level: Math.max(1, Number(blockData.level) || 1),
+            breakTime: Math.max(0, Number(blockData.breakTime) || 0)
         };
 
         this.blocks.set(formattedBlock.id, formattedBlock);

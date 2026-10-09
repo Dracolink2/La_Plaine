@@ -1,10 +1,12 @@
-// --- INVENTAIRE ---
-// 36 cases : 9 pour la hotbar (0-8), 27 pour le sac (9-35). Stack max : 100.
+
+
 const INVENTORY_SIZE = 36;
 const HOTBAR_SIZE = 9;
 const STACK_LIMIT = 100;
+const itemDefinition = id => window.itemsRegistry?.get(id) || null;
+const stackLimitFor = id => itemDefinition(id)?.stack || STACK_LIMIT;
 
-// Icône d'un bloc (texture) pour la hotbar et l'inventaire
+
 function applyBlockIcon(el, def) {
     const t = def && def.textures;
     const url = t ? (t.all || t.sides || t.top || '') : '';
@@ -32,6 +34,25 @@ class Inventory {
         return this.slots[this.selectedSlotIndex];
     }
 
+    serialize() {
+        return this.slots.map(slot => ({
+            type: Number(slot?.type) || 0,
+            count: Number(slot?.count) || 0
+        }));
+    }
+
+    deserialize(slots) {
+        if (!Array.isArray(slots) || slots.length !== INVENTORY_SIZE) return false;
+        this.slots = slots.map(slot => {
+            const rawType = Number(slot?.type);
+            const type = Number.isSafeInteger(rawType) && rawType > 0 ? rawType : 0;
+            const count = Math.max(0, Math.min(stackLimitFor(type), Math.floor(Number(slot?.count) || 0)));
+            return count > 0 && type > 0 ? { type, count } : { type: 0, count: 0 };
+        });
+        this.updateUI();
+        return true;
+    }
+
     selectSlot(index) {
         if (index >= 0 && index < HOTBAR_SIZE) {
             this.selectedSlotIndex = index;
@@ -42,34 +63,39 @@ class Inventory {
         }
     }
 
-    addBlock(blockId, amount = 1) {
-        if (!blockId || blockId === 0 || amount <= 0) return amount;
+    canAdd(itemId, amount = 1) {
+        const def = itemDefinition(itemId);
+        const cap = def?.stack || STACK_LIMIT;
+        let space = 0;
+        for (const slot of this.slots) {
+            if (slot.type === itemId) space += Math.max(0, cap - slot.count);
+            else if (!slot.type) space += cap;
+        }
+        return space >= amount;
+    }
 
-        let remaining = amount;
-
-        for (let i = 0; i < INVENTORY_SIZE && remaining > 0; i++) {
-            const slot = this.slots[i];
-            if (slot.type === blockId && slot.count < STACK_LIMIT) {
-                const space = STACK_LIMIT - slot.count;
-                const toAdd = Math.min(space, remaining);
-                slot.count += toAdd;
-                remaining -= toAdd;
+    addItem(itemId, amount = 1) {
+        itemId = Number(itemId);
+        if (!Number.isSafeInteger(itemId) || itemId <= 0 || amount <= 0) return amount;
+        const cap = stackLimitFor(itemId);
+        let remaining = Math.floor(amount);
+        for (const slot of this.slots) {
+            if (slot.type === itemId && slot.count < cap && remaining > 0) {
+                const take = Math.min(cap - slot.count, remaining);
+                slot.count += take; remaining -= take;
             }
         }
-
-        for (let i = 0; i < INVENTORY_SIZE && remaining > 0; i++) {
-            const slot = this.slots[i];
-            if (slot.type === 0) {
-                const toAdd = Math.min(STACK_LIMIT, remaining);
-                slot.type = blockId;
-                slot.count = toAdd;
-                remaining -= toAdd;
+        for (const slot of this.slots) {
+            if (!slot.type && remaining > 0) {
+                const take = Math.min(cap, remaining);
+                slot.type = itemId; slot.count = take; remaining -= take;
             }
         }
-
         this.updateUI();
         return remaining;
     }
+
+    addBlock(blockId, amount = 1) { return this.addItem(blockId, amount); }
 
     useSelectedBlock() {
         const current = this.getSelectedSlot();
@@ -94,7 +120,7 @@ class Inventory {
         const b = this.slots[indexB];
 
         if (a.type !== 0 && a.type === b.type) {
-            const space = STACK_LIMIT - b.count;
+            const space = stackLimitFor(b.type) - b.count;
             const toMove = Math.min(space, a.count);
             b.count += toMove;
             a.count -= toMove;
@@ -132,10 +158,11 @@ class Inventory {
 
             const slot = this.slots[i];
             if (slot && slot.type !== 0 && slot.count > 0) {
+                const itemObj = itemDefinition(slot.type);
                 const blockObj = typeof blockRegistry !== 'undefined' ? blockRegistry.get(slot.type) : null;
-                const hasIcon = applyBlockIcon(slotEl, blockObj);
-                slotEl.title = blockObj ? blockObj.name : 'Bloc';
-                if (nameEl) nameEl.textContent = hasIcon ? '' : (blockObj ? blockObj.name : 'Bloc');
+                const hasIcon = itemObj?.texture ? (slotEl.style.backgroundImage = `url('${itemObj.texture}')`, true) : applyBlockIcon(slotEl, blockObj);
+                slotEl.title = itemObj?.name || blockObj?.name || 'Objet';
+                if (nameEl) nameEl.textContent = hasIcon ? '' : (itemObj?.name || blockObj?.name || 'Objet');
                 if (countEl) countEl.textContent = slot.count;
             } else {
                 applyBlockIcon(slotEl, null);
@@ -165,9 +192,11 @@ class Player {
 
         this.inventory = new Inventory();
 
-        // Santé du joueur (9 cœurs)
-        this.maxHealth = 9;
-        this.health = 9;
+        
+        this.maxHealth = 10;
+        this.health = 10;
+        this.dead = false;
+        this.invulnerableUntil = 0;
 
         this.width = 0.6;
         this.height = 1.8;
@@ -193,13 +222,18 @@ class Player {
         this.canJump = false;
         this.spaceHeld = false;
 
-        this.speed = 4.3;
+        
+        this.walkSpeed = 4.3;
+        this.sprintSpeed = 7.5;
+        this.speed = this.walkSpeed;
+        this.isSprinting = false;
+
         this.jumpForce = 8.5;
         this.gravity = 28.0;
 
         this.stepTimer = 0;
         
-        // 0: 1re personne, 1: 3e personne vue arrière, 2: 3e personne vue face
+        
         this.cameraMode = 0;
         this.thirdPersonDistance = 3.5;
 
@@ -209,6 +243,51 @@ class Player {
         this.initControls();
         this.updateCameraPosition();
         this.updateHealthUI();
+    }
+
+    serializeState() {
+        return {
+            x: this.position.x, y: this.position.y, z: this.position.z,
+            rot_x: this.camera.rotation.x, rot_y: this.camera.rotation.y,
+            health: this.health,
+            selected_slot: this.inventory.selectedSlotIndex,
+            camera_mode: this.cameraMode,
+            velocity_x: this.velocity.x, velocity_y: this.velocity.y, velocity_z: this.velocity.z,
+            inventory: this.inventory.serialize()
+        };
+    }
+
+    restoreState(state, options = {}) {
+        if (!state) return false;
+        const full = options.full !== false;
+        const n = Number;
+        if ([state.x, state.y, state.z].every(v => Number.isFinite(n(v)))) {
+            this.position.set(n(state.x), n(state.y), n(state.z));
+        }
+        if (Number.isFinite(n(state.rot_x)) && Number.isFinite(n(state.rot_y))) {
+            this.camera.rotation.set(n(state.rot_x), n(state.rot_y), 0);
+        }
+        if (Number.isFinite(n(state.velocity_x)) && Number.isFinite(n(state.velocity_y)) && Number.isFinite(n(state.velocity_z))) {
+            this.velocity.set(n(state.velocity_x), n(state.velocity_y), n(state.velocity_z));
+        }
+        if (full) {
+            if (Number.isFinite(n(state.health))) {
+                this.health = Math.max(0, Math.min(this.maxHealth, n(state.health)));
+                this.dead = this.health <= 0;
+                const deathOverlay = document.getElementById('death-overlay');
+                if (deathOverlay) deathOverlay.style.display = this.dead ? 'flex' : 'none';
+            }
+            if (Number.isInteger(Number(state.selected_slot))) {
+                this.inventory.selectedSlotIndex = Math.max(0, Math.min(HOTBAR_SIZE - 1, Number(state.selected_slot)));
+            }
+            if (Number.isInteger(Number(state.camera_mode))) {
+                this.cameraMode = Math.max(0, Math.min(2, Number(state.camera_mode)));
+            }
+            this.inventory.deserialize(state.inventory);
+            this.updateHealthUI();
+        }
+        this.updateCameraPosition();
+        return true;
     }
 
     updateHealthUI() {
@@ -227,13 +306,26 @@ class Player {
     }
 
     takeDamage(amount) {
-        this.health = Math.max(0, this.health - amount);
+        if (this.dead || performance.now() < this.invulnerableUntil) return;
+        this.health = Math.max(0, this.health - Math.max(0, amount));
+        this.invulnerableUntil = performance.now() + 700;
+        const vignette = document.getElementById('damage-vignette');
+        if (vignette) { vignette.classList.remove('active'); void vignette.offsetWidth; vignette.classList.add('active'); }
         this.updateHealthUI();
+        window.dispatchEvent(new Event('health-changed'));
+        if (this.health <= 0) {
+            this.dead = true;
+            const overlay = document.getElementById('death-overlay');
+            if (overlay) overlay.style.display = 'flex';
+            if (this.controls?.isLocked) this.controls.unlock();
+        }
     }
 
     heal(amount) {
         this.health = Math.min(this.maxHealth, this.health + amount);
+        if (this.health > 0) this.dead = false;
         this.updateHealthUI();
+        window.dispatchEvent(new Event('health-changed'));
     }
 
     getAABB() {
@@ -335,6 +427,10 @@ class Player {
             if (this.inventory.isOpen) return;
 
             switch (event.code) {
+                case 'ShiftLeft':
+                case 'ShiftRight':
+                    this.isSprinting = true;
+                    break;
                 case 'KeyW': case 'KeyZ': this.moveForward = true; break;
                 case 'KeyA': case 'KeyQ': this.moveLeft = true; break;
                 case 'KeyS': this.moveBackward = true; break;
@@ -366,6 +462,10 @@ class Player {
 
         const onKeyUp = (event) => {
             switch (event.code) {
+                case 'ShiftLeft':
+                case 'ShiftRight':
+                    this.isSprinting = false;
+                    break;
                 case 'KeyW': case 'KeyZ': this.moveForward = false; break;
                 case 'KeyA': case 'KeyQ': this.moveLeft = false; break;
                 case 'KeyS': this.moveBackward = false; break;
@@ -375,7 +475,7 @@ class Player {
         };
 
         this.controls?.addEventListener('unlock', () => {
-            this.moveForward = this.moveBackward = this.moveLeft = this.moveRight = this.spaceHeld = false;
+            this.moveForward = this.moveBackward = this.moveLeft = this.moveRight = this.spaceHeld = this.isSprinting = false;
         });
 
         window.addEventListener('wheel', (event) => {
@@ -399,13 +499,22 @@ class Player {
 
         if (nowOpen) {
             if (this.controls?.isLocked) this.controls.unlock();
-            this.moveForward = this.moveBackward = this.moveLeft = this.moveRight = false;
+            this.moveForward = this.moveBackward = this.moveLeft = this.moveRight = this.isSprinting = false;
         }
     }
 
     toggleCameraMode() {
         this.cameraMode = (this.cameraMode + 1) % 3;
-        this.playerGroup.visible = (this.cameraMode !== 0);
+        if (this.playerGroup) this.playerGroup.visible = (this.cameraMode !== 0);
+
+        
+        
+        
+        
+        if (this.cameraMode !== 2) {
+            this.camera.rotation.set(0, 0, 0);
+            this.camera.quaternion.identity();
+        }
     }
 
     testCollision(posX, posY, posZ) {
@@ -436,31 +545,42 @@ class Player {
     updateCameraPosition() {
         this.pivot.set(this.position.x, this.position.y + this.eyeHeight, this.position.z);
 
+        
+        
+        
+        this.camera.getWorldDirection(this.lookDir);
+
         if (this.cameraMode === 0) {
             this.controls?.getObject().position.copy(this.pivot);
         } else {
-            this.camera.getWorldDirection(this.lookDir);
-
             this.pivot.y += 0.2;
-            
+
             const dirFactor = (this.cameraMode === 1) ? -1 : 1;
             this.desiredPos.copy(this.pivot).addScaledVector(this.lookDir, dirFactor * this.thirdPersonDistance);
-            
+
             const finalPos = this.raycastCameraCollision(this.pivot, this.desiredPos);
             this.controls?.getObject().position.copy(finalPos);
-            
+
             if (this.cameraMode === 2) {
-                this.controls?.getObject().lookAt(this.pivot);
+                
+                
+                
+                
+                this.camera.lookAt(this.pivot);
+            } else {
+                this.camera.rotation.set(0, 0, 0);
+                this.camera.quaternion.identity();
             }
         }
 
         this.playerGroup.position.copy(this.position);
 
-        this.camera.getWorldDirection(this.lookDir);
-        this.lookDir.y = 0;
-        if (this.lookDir.lengthSq() > 0) {
-            this.lookDir.normalize();
-            this.playerGroup.rotation.y = Math.atan2(this.lookDir.x, this.lookDir.z);
+        const flat = this.tempFlatDir || (this.tempFlatDir = new THREE.Vector3());
+        flat.copy(this.lookDir);
+        flat.y = 0;
+        if (flat.lengthSq() > 0) {
+            flat.normalize();
+            this.playerGroup.rotation.y = Math.atan2(flat.x, flat.z);
         }
     }
 
@@ -470,7 +590,8 @@ class Player {
         const fullDist = from.distanceTo(to);
         if (fullDist < 0.001) return to;
 
-        const dir = this.desiredPos.copy(to).sub(from).normalize();
+        this._camDir = this._camDir || new THREE.Vector3();
+        const dir = this._camDir.copy(to).sub(from).normalize();
         const step = 0.1;
         const margin = 0.25;
 
@@ -493,9 +614,16 @@ class Player {
     }
 
     update(delta) {
-        if (!this.isReady) return;
+        if (!this.isReady || this.dead) return;
 
         const dt = Math.min(delta, 0.05);
+
+        
+        if (this.isSprinting && this.moveForward) {
+            this.speed = this.sprintSpeed;
+        } else {
+            this.speed = this.walkSpeed;
+        }
 
         this.forward.set(0, 0, 0);
         if (this.controls?.isLocked && !this.inventory.isOpen) {
@@ -573,7 +701,8 @@ class Player {
 
         if ((Math.abs(this.velocity.x) > 0 || Math.abs(this.velocity.z) > 0) && this.canJump) {
             this.stepTimer += dt;
-            if (this.stepTimer > 0.35) {
+            const stepInterval = (this.isSprinting && this.moveForward) ? 0.22 : 0.35;
+            if (this.stepTimer > stepInterval) {
                 if (typeof soundManager !== 'undefined' && soundManager?.playStep) {
                     const blockUnderId = this.world.getBlock(
                         Math.floor(this.position.x),

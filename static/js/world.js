@@ -1,65 +1,27 @@
-// ============================================================================
-//  world.js — La Plaine (version optimisée)
-//  - Meshing par FACES VISIBLES (1 mesh / chunk / type) au lieu d'1 cube instancié par bloc
-//  - Atlas de textures unique + ombrage des faces + occlusion ambiante (AO) dans les sommets
-//  - Matériaux "Basic" (aucun calcul de lumière) : très léger pour les petits GPU
-//  - Génération de terrain directe dans les tableaux, éviction des chunks lointains
-// ============================================================================
+
+
+
+
+
+
+
 
 const WORLD_HEIGHT = 128;
 
-class PerlinNoise {
-    constructor() {
-        this.p = new Uint8Array(256);
-        for (let i = 0; i < 256; i++) this.p[i] = Math.floor(Math.random() * 256);
-        this.perm = new Uint8Array(512);
-        for (let i = 0; i < 512; i++) this.perm[i] = this.p[i & 255];
-    }
 
-    fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
-    lerp(t, a, b) { return a + t * (b - a); }
-
-    grad(hash, x, y) {
-        const h = hash & 7;
-        const u = h < 4 ? x : y;
-        const v = h < 4 ? y : x;
-        return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
-    }
-
-    noise(x, y) {
-        const X = Math.floor(x) & 255;
-        const Y = Math.floor(y) & 255;
-
-        x -= Math.floor(x);
-        y -= Math.floor(y);
-
-        const u = this.fade(x);
-        const v = this.fade(y);
-
-        const A = this.perm[X] + Y;
-        const B = this.perm[X + 1] + Y;
-
-        return this.lerp(v,
-            this.lerp(u, this.grad(this.perm[A], x, y), this.grad(this.perm[B], x - 1, y)),
-            this.lerp(u, this.grad(this.perm[A + 1], x, y - 1), this.grad(this.perm[B + 1], x - 1, y - 1))
-        );
-    }
-}
-
-// --- STOCKAGE COMPACT D'UN CHUNK (16 x 128 x 16, 1 octet / bloc, 0 = air) ---
 class ChunkData {
     constructor(cx, cz) {
         this.cx = cx;
         this.cz = cz;
         this.blocks = new Uint8Array(16 * WORLD_HEIGHT * 16);
-        this.heights = null;      // hauteur de surface par colonne (rempli à la génération)
+        this.heights = null;      
         this.generated = false;
-        this.modified = false;    // modifié par le joueur/fluides -> jamais évincé de la mémoire
-        this.maxY = 0;            // plus haut bloc non vide (accélère le meshing)
+        this.modified = false;    
+        this.maxY = 0;            
     }
 }
 
-// --- DÉFINITION DES 6 FACES D'UN CUBE (ordre : -x, +x, -y, +y, -z, +z), sens anti-horaire ---
+
 const FACE_DEFS = [
     { c: [{ p: [0, 1, 0], u: [0, 1] }, { p: [0, 0, 0], u: [0, 0] }, { p: [0, 1, 1], u: [1, 1] }, { p: [0, 0, 1], u: [1, 0] }] },
     { c: [{ p: [1, 1, 1], u: [0, 1] }, { p: [1, 0, 1], u: [0, 0] }, { p: [1, 1, 0], u: [1, 1] }, { p: [1, 0, 0], u: [1, 0] }] },
@@ -74,7 +36,7 @@ const FACE_UV = FACE_DEFS.map(f => Float32Array.from(f.c.flatMap(c => c.u)));
 const FACE_SHADE = [0.8, 0.8, 0.5, 1.0, 0.65, 0.65];
 const AO_LEVEL = [0.5, 0.68, 0.84, 1.0];
 
-// Pour chaque coin de chaque face : les 3 cellules voisines qui servent à calculer l'AO
+
 const FACE_AO = FACE_DEFS.map((f, fi) => f.c.map(c => {
     const d = FACE_DIR[fi];
     const axes = [0, 1, 2].filter(a => d[a] === 0);
@@ -86,12 +48,29 @@ const FACE_AO = FACE_DEFS.map((f, fi) => f.c.map(c => {
     return Int8Array.from([...o1, ...o2, ...oc]);
 }));
 
-// Types de rendu
+
 const KIND_OPAQUE = 1, KIND_CUTOUT = 2, KIND_FLUID = 3, KIND_PLANT = 4;
 
 class World {
-    constructor(scene) {
+    constructor(scene, options = {}) {
         this.scene = scene;
+
+        this.worldId = options.worldId ?? null;
+        this.seed = options.seed !== undefined && options.seed !== null && String(options.seed).trim() !== ''
+            ? String(options.seed)
+            : getWorldSeed();
+
+        
+        
+        this.currentDimensionId = options.dimensionId || 'overworld';
+        this.persistedChanges = new Map(); 
+        this.pendingChanges = new Map();   
+        this.applyingPersistedChanges = false;
+        this.recordChanges = true;
+        this.savedPlayerStates = new Map();
+        this.generatedChunkVersions = new Map(); 
+        this.pendingGeneratedChunks = new Map(); 
+        this.worldStateLoaded = false;
 
         this.chunkSize = 16;
         this.maxHeight = WORLD_HEIGHT;
@@ -100,23 +79,25 @@ class World {
         const rd = parseInt(localStorage.getItem('renderDistance'), 10);
         this.renderDistance = Math.max(1, Math.min(8, isFinite(rd) ? rd : 3));
 
-        this.dataChunks = new Map();   // données (blocs)
-        this.chunks = new Map();       // meshes affichés
+        this.dataChunks = new Map();   
+        this.chunks = new Map();       
         this.chunkQueue = [];
         this.dirty = new Set();
         this.activeFluids = new Set();
-        this.perlin = new PerlinNoise();
+        this.perlin = new PerlinNoise(this.seed);
         this.generating = false;
         this.ready = false;
 
         this.chunksGroup = new THREE.Group();
         this.scene.add(this.chunksGroup);
+        this.mobManager = typeof MobManager !== 'undefined' ? new MobManager(this.scene, this) : null;
 
         this.lastPlayerChunkX = null;
         this.lastPlayerChunkZ = null;
 
         this.dayDuration = 240;
-        this.dayTime = this.dayDuration * 0.2; // on démarre le matin
+        this.dayTime = this.dayDuration * 0.2; 
+        this.generationVersion = Number(window.GENERATION_VERSION || 1);
         this.clock = { elapsed: 0 };
         this.underwater = false;
         this.lastFluidUpdate = 0;
@@ -125,7 +106,7 @@ class World {
             waterShader: localStorage.getItem('fxWaterShader') !== 'false',
         };
 
-        // Tables de propriétés par id de bloc (lookup ultra rapide, pas de Map dans les boucles chaudes)
+        
         this.kindT = new Uint8Array(256).fill(KIND_OPAQUE);
         this.opaqueT = new Uint8Array(256).fill(1);
         this.solidT = new Uint8Array(256).fill(1);
@@ -140,7 +121,7 @@ class World {
         this.tileSpan = 1;
         this.tileAvg = [0x888888];
 
-        this._lc = null; this._lcx = 0; this._lcz = 0;   // cache du dernier chunk lu
+        this._lc = null; this._lcx = 0; this._lcz = 0;   
         this._ch3 = new Array(9).fill(null);
         this._bld = [this._newBuilder(), this._newBuilder(), this._newBuilder()];
 
@@ -153,12 +134,28 @@ class World {
         this._lastF = -1;
 
         this.fogNear = 20; this.fogFar = 44;
+
+        
+        this.shadersEnabled = localStorage.getItem('fxShaders') !== 'false';
+        
+        this.biomeRegistry = (typeof biomeRegistry !== 'undefined') ? biomeRegistry : null;
+        this.currentBiomeId = null;
+        this._ambTint = new THREE.Color(1, 1, 1);       
+        this._ambTintTarget = new THREE.Color(1, 1, 1);
+        this._ambFogMul = 1;                             
+        this._ambFogMulTarget = 1;
+        this._ambCheckTimer = 0;
+        window.addEventListener('shaders-toggled', (e) => {
+            this.shadersEnabled = e.detail.enabled;
+            if (!this.shadersEnabled) { this._ambTintTarget.set(1, 1, 1); this._ambFogMulTarget = 1; }
+        });
+
         this.initSkyAndClouds();
         this.setCloudsVisible(localStorage.getItem('showClouds') !== 'false');
         this.applyFog();
     }
 
-    // ============ INITIALISATION ASYNCHRONE (textures) ============
+    
 
     async init(onStatus) {
         if (onStatus) onStatus('Chargement des textures...');
@@ -171,7 +168,7 @@ class World {
     }
 
     _collectPaths() {
-        const paths = new Map(); // chemin -> index de tuile (0 = tuile par défaut grise)
+        const paths = new Map(); 
         if (typeof blockRegistry === 'undefined') return paths;
         blockRegistry.getAll().forEach(b => {
             const t = b.textures || {};
@@ -200,7 +197,7 @@ class World {
         this.atlasSize = size;
         this.atlasTile = T;
 
-        const inset = 0.02; // px, évite les débordements entre tuiles
+        const inset = 0.02; 
         this.tileU = new Float32Array(count);
         this.tileV = new Float32Array(count);
         this.tileSpan = (T - 2 * inset) / size;
@@ -227,7 +224,7 @@ class World {
         const drawTile = (t, img) => {
             const x = (t % this.atlasCols) * T, y = Math.floor(t / this.atlasCols) * T;
             if (img) {
-                const s = Math.min(img.naturalWidth, img.naturalHeight); // ignore les bandes animées
+                const s = Math.min(img.naturalWidth, img.naturalHeight); 
                 ctx.drawImage(img, 0, 0, s, s, x, y, T, T);
             } else {
                 ctx.fillStyle = t === 0 ? '#888888' : '#ff00ff';
@@ -241,7 +238,7 @@ class World {
                     r += d[i]; g += d[i + 1]; b += d[i + 2]; n++;
                 }
                 if (n) this.tileAvg[t] = ((r / n) << 16) | ((g / n) << 8) | (b / n);
-            } catch (e) { /* canvas non lisible : couleur par défaut */ }
+            } catch (e) {  }
         };
 
         drawTile(0, null);
@@ -270,7 +267,7 @@ class World {
             this.solidT[id] = (kind === KIND_FLUID || kind === KIND_PLANT) ? 0 : 1;
             this.fluidT[id] = kind === KIND_FLUID ? 1 : 0;
             this.plantT[id] = kind === KIND_PLANT ? 1 : 0;
-            // feuillages "pleins" (une seule texture) : on garde les faces internes (trous du feuillage)
+            
             this.noCullT[id] = (kind === KIND_CUTOUT && t.all) ? 1 : 0;
 
             const pick = (...keys) => {
@@ -285,14 +282,14 @@ class World {
             this.tileT[base + 2] = bottom; this.tileT[base + 3] = top;
             this.tileT[base + 4] = side; this.tileT[base + 5] = side;
         });
-        this.opaqueT[255] = 1; // sentinelle "sous le monde"
+        this.opaqueT[255] = 1; 
     }
 
     getBlockColor(id) {
         return this.tileAvg[this.tileT[id * 6]] || 0x888888;
     }
 
-    // ============ MATÉRIAUX ============
+    
 
     _createWaterShader(tex) {
         const uniforms = THREE.UniformsUtils.merge([
@@ -374,7 +371,7 @@ class World {
         }
     }
 
-    // ============ BROUILLARD (masque le bord du monde) ============
+    
 
     applyFog() {
         const R = this.renderDistance * 16;
@@ -396,7 +393,7 @@ class World {
         this._syncFog();
     }
 
-    // ============ CIEL / NUAGES / JOUR-NUIT ============
+    
 
     initSkyAndClouds() {
         this.cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, fog: false });
@@ -465,20 +462,46 @@ class World {
         }
         const f = 0.3 + 0.7 * light;
 
+        
+        if (this.shadersEnabled && center) {
+            this._ambCheckTimer += delta;
+            if (this._ambCheckTimer > 0.3) {
+                this._ambCheckTimer = 0;
+                this._updateBiomeAmbianceTarget(Math.floor(center.x), Math.floor(center.z));
+            }
+            const lerpSpeed = Math.min(1, delta * 0.8); 
+            this._ambTint.lerp(this._ambTintTarget, lerpSpeed);
+            this._ambFogMul += (this._ambFogMulTarget - this._ambFogMul) * lerpSpeed;
+        }
+
+        
+        const t = this._ambTint;
+        const litF = f; 
         let bg = sky;
         if (this.underwater) {
             this._bg.copy(this._under).multiplyScalar(f);
             bg = this._bg;
+        } else if (this.shadersEnabled && (t.r !== 1 || t.g !== 1 || t.b !== 1)) {
+            this._bg.copy(sky).multiply(t);
+            bg = this._bg;
         }
         this.scene.background = bg;
-        if (this.scene.fog) this.scene.fog.color.copy(bg);
+        if (this.scene.fog) {
+            this.scene.fog.color.copy(bg);
+            
+            
+            const mul = this.shadersEnabled ? Math.min(1, this._ambFogMul) : 1;
+            this.scene.fog.near = (this.underwater ? 0.5 : this.fogNear) * mul;
+            this.scene.fog.far = (this.underwater ? 18 : this.fogFar) * mul;
+        }
 
-        if (Math.abs(f - this._lastF) > 0.003 && this.mats) {
+        const lf = litF * t.r; 
+        if ((Math.abs(f - this._lastF) > 0.003 || this.shadersEnabled) && this.mats) {
             this._lastF = f;
-            this.mats.opaque.color.setRGB(f, f, f);
-            this.mats.cutout.color.setRGB(f, f, f);
-            this.mats.waterSimple.color.setRGB(f, f, f);
-            this.mats.waterShader.uniforms.uLight.value = f;
+            this.mats.opaque.color.setRGB(litF * t.r, litF * t.g, litF * t.b);
+            this.mats.cutout.color.setRGB(litF * t.r, litF * t.g, litF * t.b);
+            this.mats.waterSimple.color.setRGB(litF * t.r, litF * t.g, litF * t.b);
+            this.mats.waterShader.uniforms.uLight.value = lf;
             this.cloudMat.color.setRGB(f, f, f);
         }
         if (this.mats) this.mats.waterShader.uniforms.uTime.value = this.clock.elapsed;
@@ -491,7 +514,27 @@ class World {
         }
     }
 
-    // ============ ACCÈS BLOCS ============
+    
+    
+    
+    _updateBiomeAmbianceTarget(x, z) {
+        if (!this.biomeRegistry) return;
+        const biome = this.biomeRegistry.getBiomeAt(x, z, this.perlin);
+        const id = biome ? biome.id : null;
+        if (id === this.currentBiomeId) return;
+        this.currentBiomeId = id;
+
+        const amb = biome && biome.ambiance;
+        if (amb) {
+            this._ambTintTarget.set(amb.tint !== undefined ? amb.tint : 0xffffff);
+            this._ambFogMulTarget = amb.fogDensity !== undefined ? amb.fogDensity : 1;
+        } else {
+            this._ambTintTarget.set(0xffffff);
+            this._ambFogMulTarget = 1;
+        }
+    }
+
+    
 
     getChunkKey(cx, cz) {
         return ((cx & 0xFFFF) << 16) | (cz & 0xFFFF);
@@ -507,7 +550,7 @@ class World {
         return chunk;
     }
 
-    // Lecture avec coordonnées entières (chemin rapide)
+    
     getBlockI(x, y, z) {
         if (y < 0 || y >= WORLD_HEIGHT) return 0;
         const cx = x >> 4, cz = z >> 4;
@@ -536,6 +579,7 @@ class World {
 
         if (!this.generating) {
             chunk.modified = true;
+            this._recordBlockChange(x, y, z, id);
             const key = this._packFluid(x, y, z);
             if (id !== 0 && this.fluidT[id]) this.activeFluids.add(key);
             else this.activeFluids.delete(key);
@@ -552,98 +596,236 @@ class World {
         return !!(c && c.generated);
     }
 
-    // ============ GÉNÉRATION DU TERRAIN ============
+    
+
+    _changeChunkKey(x, z) {
+        return this.getChunkKey(Math.floor(x) >> 4, Math.floor(z) >> 4);
+    }
+
+    _changeBlockKey(x, y, z) {
+        return `${Math.floor(x)},${Math.floor(y)},${Math.floor(z)}`;
+    }
+
+    loadPersistedChanges(changes) {
+        this.persistedChanges.clear();
+        if (!Array.isArray(changes)) return;
+
+        for (const change of changes) {
+            const dimension = String(change.dimension || 'overworld');
+            const x = Math.floor(Number(change.x));
+            const y = Math.floor(Number(change.y));
+            const z = Math.floor(Number(change.z));
+            const id = Math.floor(Number(change.block_id));
+            if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z) ||
+                y < 0 || y >= WORLD_HEIGHT || !Number.isInteger(id) || id < 0 || id > 255) {
+                continue;
+            }
+
+            let dimMap = this.persistedChanges.get(dimension);
+            if (!dimMap) {
+                dimMap = new Map();
+                this.persistedChanges.set(dimension, dimMap);
+            }
+
+            const chunkKey = this._changeChunkKey(x, z);
+            let chunkMap = dimMap.get(chunkKey);
+            if (!chunkMap) {
+                chunkMap = new Map();
+                dimMap.set(chunkKey, chunkMap);
+            }
+
+            chunkMap.set(this._changeBlockKey(x, y, z), { x, y, z, id });
+        }
+    }
+
+    loadPlayerStates(states) {
+        this.savedPlayerStates.clear();
+        if (!Array.isArray(states)) return;
+        for (const state of states) {
+            if (!state || !state.dimension) continue;
+            this.savedPlayerStates.set(String(state.dimension), state);
+        }
+    }
+
+    getSavedPlayerState(dimension = this.currentDimensionId) {
+        return this.savedPlayerStates.get(String(dimension)) || null;
+    }
+
+    loadGeneratedChunks(chunks) {
+        this.generatedChunkVersions.clear();
+        if (!Array.isArray(chunks)) return;
+        for (const entry of chunks) {
+            if (!entry || !entry.dimension) continue;
+            const cx = Math.floor(Number(entry.chunk_x));
+            const cz = Math.floor(Number(entry.chunk_z));
+            const version = Math.max(1, Math.floor(Number(entry.generation_version || 1)));
+            if (!Number.isFinite(cx) || !Number.isFinite(cz)) continue;
+            const dimension = String(entry.dimension);
+            let map = this.generatedChunkVersions.get(dimension);
+            if (!map) { map = new Map(); this.generatedChunkVersions.set(dimension, map); }
+            map.set(this.getChunkKey(cx, cz), version);
+        }
+    }
+
+    getGeneratedChunkVersion(cx, cz, dimension = this.currentDimensionId) {
+        const map = this.generatedChunkVersions.get(String(dimension));
+        return map?.get(this.getChunkKey(cx, cz)) || null;
+    }
+
+    _recordGeneratedChunk(cx, cz, generationVersion = this.generationVersion) {
+        if (!this.worldId || this.generating === false && this.applyingPersistedChanges) return;
+        const dimension = String(this.currentDimensionId || 'overworld');
+        const key = `${dimension}|${cx}|${cz}`;
+        if (!this.generatedChunkVersions.has(dimension)) this.generatedChunkVersions.set(dimension, new Map());
+        const map = this.generatedChunkVersions.get(dimension);
+        const packed = this.getChunkKey(cx, cz);
+        map.set(packed, generationVersion);
+        this.pendingGeneratedChunks.set(key, {
+            dimension, chunk_x: cx, chunk_z: cz, generation_version: generationVersion
+        });
+    }
+
+    async flushGeneratedChunks() {
+        if (!this.worldId || !this.pendingGeneratedChunks.size) return true;
+        const batch = [...this.pendingGeneratedChunks.values()].slice(0, 5000);
+        try {
+            const response = await fetch(`/api/worlds/${encodeURIComponent(this.worldId)}/generated-chunks`, {
+                method: 'POST',
+                keepalive: true,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chunks: batch })
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            for (const entry of batch) {
+                const key = `${entry.dimension}|${entry.chunk_x}|${entry.chunk_z}`;
+                if (this.pendingGeneratedChunks.get(key)?.generation_version === entry.generation_version) {
+                    this.pendingGeneratedChunks.delete(key);
+                }
+            }
+            return true;
+        } catch (error) {
+            console.warn('Sauvegarde des chunks générés impossible :', error);
+            return false;
+        }
+    }
+
+    loadWorldState(state) {
+        if (!state) return;
+        if (Number.isFinite(Number(state.day_time))) this.dayTime = Number(state.day_time);
+        if (Number.isInteger(Number(state.generation_version)) && Number(state.generation_version) > 0) {
+            this.generationVersion = Number(state.generation_version);
+        }
+        if (state.current_dimension) this.currentDimensionId = String(state.current_dimension);
+        this.worldStateLoaded = true;
+    }
+
+    getWorldState() {
+        return {
+            current_dimension: this.currentDimensionId || 'overworld',
+            day_time: this.dayTime,
+            generation_version: this.generationVersion
+        };
+    }
+
+    async saveWorldState() {
+        if (!this.worldId) return false;
+        const payload = this.getWorldState();
+        try {
+            const response = await fetch(`/api/worlds/${encodeURIComponent(this.worldId)}/state`, {
+                method: 'PUT',
+                keepalive: true,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return true;
+        } catch (error) {
+            console.warn('Sauvegarde de l’état du monde impossible :', error);
+            return false;
+        }
+    }
+
+    _applyPersistedChangesToChunk(cx, cz) {
+        const dimMap = this.persistedChanges.get(this.currentDimensionId);
+        if (!dimMap) return;
+
+        const chunkChanges = dimMap.get(this.getChunkKey(cx, cz));
+        if (!chunkChanges || !chunkChanges.size) return;
+
+        this.applyingPersistedChanges = true;
+        try {
+            const chunk = this.getChunkAt(cx, cz, true);
+            for (const change of chunkChanges.values()) {
+                const local = ((change.z & 15) << 4) | (change.x & 15);
+                chunk.blocks[(change.y << 8) | local] = change.id;
+                if (change.id !== 0 && change.y > chunk.maxY) chunk.maxY = change.y;
+                if (this.fluidT[change.id]) this.activeFluids.add(this._packFluid(change.x, change.y, change.z));
+            }
+            chunk.modified = true;
+        } finally {
+            this.applyingPersistedChanges = false;
+        }
+    }
+
+    _recordBlockChange(x, y, z, id) {
+        if (!this.worldId || this.applyingPersistedChanges || this.generating || !this.recordChanges) return;
+
+        const dimension = String(this.currentDimensionId || 'overworld');
+        const key = `${dimension}|${x}|${y}|${z}`;
+        this.pendingChanges.set(key, {
+            dimension, x, y, z, block_id: id
+        });
+    }
+
+    async flushChanges() {
+        if (!this.worldId || !this.pendingChanges.size) return true;
+
+        const changes = [...this.pendingChanges.values()];
+        const batch = changes.slice(0, 5000);
+        try {
+            const response = await fetch(`/api/worlds/${encodeURIComponent(this.worldId)}/changes`, {
+                method: 'POST',
+                keepalive: true,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ changes: batch })
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            for (const change of batch) {
+                const key = `${change.dimension}|${change.x}|${change.y}|${change.z}`;
+                const current = this.pendingChanges.get(key);
+                if (current && current.block_id === change.block_id) this.pendingChanges.delete(key);
+            }
+            return true;
+        } catch (error) {
+            console.warn('Sauvegarde des blocs impossible :', error);
+            return false;
+        }
+    }
+
+    
 
     _computeHeight(biome, x, z) {
-        const elevation = this.perlin.noise(x * 0.03, z * 0.03) * biome.elevationScale;
-        const detail = this.perlin.noise(x * 0.1, z * 0.1) * biome.detailScale;
-        const h = Math.floor(biome.baseHeight + elevation + detail);
-        return Math.max(2, Math.min(WORLD_HEIGHT - 12, h));
+        return Generation.computeHeight(this, biome, x, z);
     }
 
     getTerrainHeight(x, z) {
         x = Math.floor(x); z = Math.floor(z);
         const chunk = this.dataChunks.get(this.getChunkKey(x >> 4, z >> 4));
         if (chunk && chunk.heights) return chunk.heights[((z & 15) << 4) | (x & 15)];
-        if (typeof biomeRegistry === 'undefined') return 10;
-        return this._computeHeight(biomeRegistry.getBiomeAt(x, z, this.perlin), x, z);
+        if (!this.biomeRegistry) return 10;
+        return Generation.computeHeight(this, this.biomeRegistry.getBiomeAt(x, z, this.perlin), x, z);
     }
 
     spawnTree(x, startY, z) {
-        const treeHeight = 4 + Math.floor(Math.abs(this.perlin.noise(x * 0.5, z * 0.5)) * 2);
-
-        for (let y = startY; y < startY + treeHeight; y++) {
-            this.setBlock(x, y, z, 4);
-        }
-
-        const leafStart = startY + treeHeight - 2;
-        const leafEnd = startY + treeHeight + 1;
-
-        for (let ly = leafStart; ly <= leafEnd; ly++) {
-            const radius = ly >= leafEnd - 1 ? 1 : 2;
-            for (let lx = x - radius; lx <= x + radius; lx++) {
-                for (let lz = z - radius; lz <= z + radius; lz++) {
-                    if (this.getBlock(lx, ly, lz) === 0) {
-                        if (Math.abs(lx - x) === radius && Math.abs(lz - z) === radius && ((lx + ly + lz) & 1) === 0) {
-                            continue;
-                        }
-                        this.setBlock(lx, ly, lz, 5);
-                    }
-                }
-            }
-        }
+        Generation.generateTree(this, x, startY, z);
     }
 
     generateTerrainData(cx, cz) {
-        const chunk = this.getChunkAt(cx, cz, true);
-        if (chunk.generated) return;
-        chunk.generated = true;
-
-        if (typeof biomeRegistry === 'undefined') return;
-
-        this.generating = true;
-        const B = chunk.blocks;
-        const heights = new Uint8Array(256);
-        chunk.heights = heights;
-        const startX = cx << 4, startZ = cz << 4;
-        const sea = this.seaLevel;
-        let maxY = 0;
-
-        for (let lz = 0; lz < 16; lz++) {
-            for (let lx = 0; lx < 16; lx++) {
-                const x = startX + lx, z = startZ + lz;
-                const biome = biomeRegistry.getBiomeAt(x, z, this.perlin);
-                const h = this._computeHeight(biome, x, z);
-                heights[(lz << 4) | lx] = h;
-
-                const stoneH = Math.max(0, h - 3);
-                const col = (lz << 4) | lx;
-                for (let y = 0; y < stoneH; y++) B[(y << 8) | col] = biome.stoneBlock;
-                for (let y = stoneH; y < h; y++) B[(y << 8) | col] = biome.subSurfaceBlock;
-                B[(h << 8) | col] = h <= sea + 1 ? 9 : biome.surfaceBlock;
-
-                if (h > maxY) maxY = h;
-                if (h < sea) {
-                    for (let y = h + 1; y <= sea; y++) B[(y << 8) | col] = 11;
-                    if (sea > maxY) maxY = sea;
-                }
-            }
-        }
-        chunk.maxY = maxY;
-
-        // Décorations (arbres, cactus, fleurs) : marge de 2 blocs pour ne jamais déborder du chunk
-        for (let x = startX + 2; x < startX + 14; x++) {
-            for (let z = startZ + 2; z < startZ + 14; z++) {
-                const surfaceY = heights[((z - startZ) << 4) | (x - startX)];
-                if (surfaceY > sea) {
-                    biomeRegistry.getBiomeAt(x, z, this.perlin).generateDecorations(this, x, surfaceY, z, this.perlin);
-                }
-            }
-        }
-        this.generating = false;
+        const savedVersion = this.getGeneratedChunkVersion(cx, cz);
+        Generation.generateTerrainData(this, cx, cz, savedVersion || this.generationVersion);
     }
 
-    // ============ MESHING PAR FACES ============
+    
 
     _newBuilder() {
         return { pos: [], uv: [], col: [], idx: [], top: [], n: 0 };
@@ -707,7 +889,7 @@ class World {
             b.pos.push(ax, y, az, bx, y, bz, ax, y + s, az, bx, y + s, bz);
             b.uv.push(u0, v0, u0 + ts, v0, u0, v0 + ts, u0 + ts, v0 + ts);
             b.col.push(c, c, c, c, c, c, c, c, c, c, c, c);
-            // les deux faces (le feuillage est visible des deux côtés)
+            
             b.idx.push(base, base + 1, base + 2, base + 2, base + 1, base + 3,
                        base, base + 2, base + 1, base + 1, base + 2, base + 3);
             b.n += 4;
@@ -828,7 +1010,7 @@ class World {
         this.chunks.delete(key);
     }
 
-    // ============ STREAMING DES CHUNKS ============
+    
 
     updateChunks(playerX, playerZ, force = false) {
         const pcx = Math.floor(playerX) >> 4;
@@ -845,7 +1027,7 @@ class World {
         for (let dx = -rd; dx <= rd; dx++) {
             for (let dz = -rd; dz <= rd; dz++) {
                 const d2 = dx * dx + dz * dz;
-                if (d2 > maxD2) continue; // distance circulaire : ~20% de chunks en moins
+                if (d2 > maxD2) continue; 
                 const cx = pcx + dx, cz = pcz + dz;
                 const key = this.getChunkKey(cx, cz);
                 needed.add(key);
@@ -860,7 +1042,7 @@ class World {
         }
         for (const key of this.dirty) if (!this.chunks.has(key)) this.dirty.delete(key);
 
-        // Libère la mémoire des chunks lointains non modifiés (ils seront régénérés à l'identique)
+        
         const keep = rd + 2;
         for (const [key, d] of this.dataChunks) {
             if (!d.modified && (Math.abs(d.cx - pcx) > keep || Math.abs(d.cz - pcz) > keep)) {
@@ -870,7 +1052,7 @@ class World {
         this._lc = null;
     }
 
-    // Une unité de travail : régénère un chunk sale, génère un terrain manquant, ou construit un mesh
+    
     _processOne() {
         if (this.dirty.size) {
             const key = this.dirty.values().next().value;
@@ -897,7 +1079,7 @@ class World {
         return true;
     }
 
-    // Budget de temps par frame (ms) pour ne jamais faire chuter les FPS
+    
     processQueue(budget = 4) {
         const t0 = performance.now();
         do {
@@ -918,7 +1100,11 @@ class World {
         }
     }
 
-    // Cherche un point d'apparition sec et dégagé, le plus proche possible de (0,0)
+    
+    updateMobs(delta, player) {
+        if (this.mobManager) this.mobManager.update(delta, player);
+    }
+
     findSpawn(maxR = 28) {
         const sea = this.seaLevel;
         for (let r = 0; r <= maxR; r++) {
@@ -936,7 +1122,7 @@ class World {
         return { x: 0.5, y: this.getTerrainHeight(0, 0) + 3, z: 0.5 };
     }
 
-    // ============ RAYON DANS LES VOXELS (DDA) : remplace le Raycaster Three.js ============
+    
 
     raycast(ox, oy, oz, dx, dy, dz, maxDist, out) {
         let x = Math.floor(ox), y = Math.floor(oy), z = Math.floor(oz);
@@ -964,7 +1150,7 @@ class World {
         return false;
     }
 
-    // ============ FLUIDES ============
+    
 
     _packFluid(x, y, z) {
         return ((x + 1048576) * 2097152 + (z + 1048576)) * 128 + y;
@@ -995,15 +1181,21 @@ class World {
         if (time - this.lastFluidUpdate < 300 || this.activeFluids.size === 0) return;
         this.lastFluidUpdate = time;
 
-        // Au plus 200 cellules par tick : l'eau coule progressivement sans jamais bloquer le jeu
+        
         const batch = [];
         for (const key of this.activeFluids) {
             batch.push(key);
             if (batch.length >= 200) break;
         }
 
-        for (const key of batch) {
-            this.activeFluids.delete(key);
+        
+        
+        
+        const previousRecordChanges = this.recordChanges;
+        this.recordChanges = true;
+        try {
+            for (const key of batch) {
+                this.activeFluids.delete(key);
             const [x, y, z] = this._unpackFluid(key);
             const id = this.getBlockI(x, y, z);
             if (!this.fluidT[id]) continue;
@@ -1019,12 +1211,15 @@ class World {
                         this.setBlock(nx, y, nz, id);
                         this._markDirtyAround(nx, nz);
                     }
+                    }
                 }
             }
+        } finally {
+            this.recordChanges = previousRecordChanges;
         }
     }
 
-    // ============ ÉDITION DE BLOCS ============
+    
 
     rebuildAround(x, z) {
         const cx = x >> 4, cz = z >> 4, lx = x & 15, lz = z & 15;
@@ -1047,10 +1242,10 @@ class World {
 
         this.setBlock(x, y, z, 0);
 
-        // Une plante posée dessus disparaît avec son support
+        
         if (this.plantT[this.getBlockI(x, y + 1, z)]) this.setBlock(x, y + 1, z, 0);
 
-        // L'eau voisine vient combler le trou
+        
         const nb = [[x + 1, y, z], [x - 1, y, z], [x, y + 1, z], [x, y - 1, z], [x, y, z + 1], [x, y, z - 1]];
         for (const [nx, ny, nz] of nb) {
             if (this.fluidT[this.getBlockI(nx, ny, nz)]) this.activeFluids.add(this._packFluid(nx, ny, nz));

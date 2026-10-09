@@ -1,0 +1,116 @@
+[
+  {
+    "id": "acacia_planks",
+    "name": "Planches d’acacia",
+    "grid": 2,
+    "pattern": [
+      [
+        28,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "output": {
+      "id": 42,
+      "count": 4
+    }
+  },
+  {
+    "id": "dark_planks",
+    "name": "Planches noires",
+    "grid": 2,
+    "pattern": [
+      [
+        35,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "output": {
+      "id": 43,
+      "count": 4
+    }
+  },
+  {
+    "id": "nyamee_planks",
+    "name": "Planches de Nyamée",
+    "grid": 2,
+    "pattern": [
+      [
+        25,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "output": {
+      "id": 44,
+      "count": 4
+    }
+  },
+  {
+    "id": "oak_planks",
+    "name": "Planches de chêne",
+    "grid": 2,
+    "pattern": [
+      [
+        4,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "output": {
+      "id": 41,
+      "count": 4
+    }
+  },
+  {
+    "id": "pine_planks",
+    "name": "Planches de sapin",
+    "grid": 2,
+    "pattern": [
+      [
+        15,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "output": {
+      "id": 45,
+      "count": 4
+    }
+  },
+  {
+    "id": "sticks",
+    "name": "Bâtons",
+    "grid": 2,
+    "pattern": [
+      [
+        41,
+        0
+      ],
+      [
+        41,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1101,
+      "count": 4
+    }
+  }
+]
