@@ -20,15 +20,3 @@ La Plaine vas atteindre un nouveau niveau avec :
 
 # 0.2.5.0 :
 La Plaine vas encore une fois changer de niveau , en ajoutant une vraie dimension !! ( et aussi une personnalisation simple du skin )
-
-# 0.2.6.0 :
-La Plaine vas encore plus évoluer en ajoutant cette fois ci : le multijoueur en ligne !!!
-
-# 0.2.7.0 :
-Je sais pas .
-
-# 0.2.8.0 :
-La Plaine as juste quelques optimisations à faire , et l'ajout simple de petit contenus .
-
-#0.2.9.0 :
-Dernière petits ajout des contenus et optimisations avant de passer à la V0.3.0.0 !!!!!
