@@ -1,8 +1,8 @@
 Voici le fichier qui vas servir à stocker tout les messages et updates prévus de La Plaine , ainsi que des dates approximatives de release !!!
 Nous aimons beaucoup travailler sur La Plaine , surtout que le projet devient vraiment très gros .
 
-# 0.2.4.0 :
-La Plaine vas atteindre un nouveau niveau avec :
+# 0.3.0.0 :
+C'est la plus grande update de La Plaine , elle seras peut être faite en plusieurs parties ( 0.3.1 etc etc ) , mais en bref , elle est énorme !!!!!! :
 - ajout des crafts
 - ajout d'entités
 - ajout de l'équivalent de la Bedrock 
@@ -25,7 +25,7 @@ La Plaine vas atteindre un nouveau niveau avec :
 - amélioration du système jour/nuit
 - ajout de contenus divers ( biomes , blocks , structures , et autres !)
 en gros , cette mise à jour est énorme , elle sortiras dans un peu longtemps c'est vrai , mais au moins , une fois cette mise à jour faite : le jeu peut enfin devenir un très bon jeu jouable pour le fun !!!!
-Cette version sortiras entre le 09/10/2026 et la semaine qui suit .
+Cette version sortiras entre le 09/10/2026 et le mois qui suit.
 
 # 0.2.5.0 :
 La Plaine vas encore une fois changer de niveau , en ajoutant une vraie dimension !! ( et aussi une personnalisation simple du skin )
