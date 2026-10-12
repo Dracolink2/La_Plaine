@@ -88,6 +88,14 @@
             </div>
 
             <div class="setting-item">
+                <label for="graphics-quality-select">Qualité graphique :</label>
+                <select id="graphics-quality-select">
+                    <option value="low">Faible — priorité aux performances</option>
+                    <option value="medium">Moyenne — équilibrée</option>
+                    <option value="high">Max — image plus nette, plus gourmande</option>
+                </select>
+            </div>
+            <div class="setting-item">
                 <label for="resolution-select">Résolution graphique :</label>
                 <select id="resolution-select">
                     <option value="auto">Auto (Écran Natif)</option>
@@ -112,13 +120,7 @@
                 <label><input type="checkbox" id="vignette-toggle-menu" checked> Vignette rouge de dégâts</label>
             </div>
             <div class="setting-item">
-                <label><input type="checkbox" id="bob-toggle-menu" checked> Balancement de caméra (marche)</label>
-            </div>
-            <div class="setting-item">
-                <label><input type="checkbox" id="fireflies-toggle-menu" checked> Lucioles nocturnes</label>
-            </div>
-            <div class="setting-item">
-                <label><input type="checkbox" id="shaders-toggle-menu" checked> Shaders (blocs & biomes)</label>
+                <label><input type="checkbox" id="shaders-toggle-menu" checked> Ambiance des biomes et brouillard</label>
             </div>
 
             <hr class="divider">
@@ -385,6 +387,24 @@
         resSelect.value = localStorage.getItem('gameResolution') || 'auto';
         resSelect.addEventListener('change', e => localStorage.setItem('gameResolution', e.target.value));
 
+        const graphicsQualitySelect = document.getElementById('graphics-quality-select');
+        graphicsQualitySelect.value = localStorage.getItem('graphicsQuality') || 'medium';
+        graphicsQualitySelect.addEventListener('change', e => {
+            localStorage.setItem('graphicsQuality', e.target.value);
+            // Les options de shaders suivent le profil, mais restent modifiables séparément.
+            if (e.target.value === 'low') {
+                localStorage.setItem('fxShaders', 'false');
+                localStorage.setItem('fxWaterShader', 'false');
+            } else if (e.target.value === 'high') {
+                localStorage.setItem('fxShaders', 'true');
+                localStorage.setItem('fxWaterShader', 'true');
+            }
+            const shadersToggle = document.getElementById('shaders-toggle-menu');
+            const waterToggle = document.getElementById('water-shader-toggle-menu');
+            if (shadersToggle) shadersToggle.checked = localStorage.getItem('fxShaders') !== 'false';
+            if (waterToggle) waterToggle.checked = localStorage.getItem('fxWaterShader') !== 'false';
+        });
+
         cloudToggleMenu.checked = localStorage.getItem('showClouds') !== 'false';
         cloudToggleMenu.addEventListener('change', e => localStorage.setItem('showClouds', e.target.checked));
 
@@ -392,17 +412,9 @@
         waterShaderToggleMenu.addEventListener('change', e => localStorage.setItem('fxWaterShader', e.target.checked));
 
         const vignetteToggleMenu = document.getElementById('vignette-toggle-menu');
-        const bobToggleMenu = document.getElementById('bob-toggle-menu');
-        const firefliesToggleMenu = document.getElementById('fireflies-toggle-menu');
 
         vignetteToggleMenu.checked = localStorage.getItem('fxDamageVignette') !== 'false';
         vignetteToggleMenu.addEventListener('change', e => localStorage.setItem('fxDamageVignette', e.target.checked));
-
-        bobToggleMenu.checked = localStorage.getItem('fxCameraBob') !== 'false';
-        bobToggleMenu.addEventListener('change', e => localStorage.setItem('fxCameraBob', e.target.checked));
-
-        firefliesToggleMenu.checked = localStorage.getItem('fxFireflies') !== 'false';
-        firefliesToggleMenu.addEventListener('change', e => localStorage.setItem('fxFireflies', e.target.checked));
 
         const shadersToggleMenu = document.getElementById('shaders-toggle-menu');
         shadersToggleMenu.checked = localStorage.getItem('fxShaders') !== 'false';
@@ -412,14 +424,14 @@
         });
 
         const textures = [
-            '/static/textures/dirt.png',
-            '/static/textures/grass_side.png',
-            '/static/textures/grass_top.png',
-            '/static/textures/stone.png',
-            '/static/textures/oak_side.png',
-            '/static/textures/oak_top.png',
-            '/static/textures/oak_leaves.png',
-            '/static/textures/fleur-nyamee.png'
+            '/static/textures/grass/dirt.png',
+            '/static/textures/grass/grass_side.png',
+            '/static/textures/grass/grass_top.png',
+            '/static/textures/pierres/stone/stone.png',
+            '/static/textures/bois/bûches/oak_side.png',
+            '/static/textures/bois/bûches/oak_top.png',
+            '/static/textures/bois/leaves/oak_leaves.png',
+            '/static/textures/Nyamée/Fleur-Nyamée.png'
         ];
 
         const bgSlideshow = document.getElementById('bg-slideshow');
