@@ -1,0 +1,48 @@
+window.BiomeStructures = window.BiomeStructures || {};
+
+window.BiomeStructures.petiteMaison = {
+    id: 'petite_maison',
+    size: { x: 7, y: 5, z: 7 },
+    chance: 0.02,
+    minFlatLength: 7,
+    flatTolerance: 1,
+    guaranteedOnFlat: false,
+
+    place(world, x, y, z) {
+        const wood = 41;
+        const leaves = 5;
+
+        for (let dx = 0; dx < 7; dx++) {
+            for (let dz = 0; dz < 7; dz++) {
+                world.setBlock(x + dx, y, z + dz, wood);
+            }
+        }
+
+        for (let dy = 1; dy <= 3; dy++) {
+            for (let dx = 0; dx < 7; dx++) {
+                for (let dz = 0; dz < 7; dz++) {
+                    const edge = dx === 0 || dx === 6 || dz === 0 || dz === 6;
+                    if (!edge) continue;
+
+                    if (dz === 0 && dx === 3 && dy <= 2) continue;
+                    world.setBlock(x + dx, y + dy, z + dz, wood);
+                }
+            }
+        }
+
+        for (const dy of [2]) {
+            for (const sideX of [0, 6]) {
+                world.setBlock(x + sideX, y + dy, z + 2, 0);
+                world.setBlock(x + sideX, y + dy, z + 4, 0);
+            }
+        }
+
+        for (let dx = -1; dx <= 7; dx++) {
+            for (let dz = -1; dz <= 7; dz++) world.setBlock(x + dx, y + 4, z + dz, 41);
+        }
+        world.setBlock(x + 3, y + 1, z, 0);
+        world.setBlock(x + 3, y + 2, z, 0);
+        world.setBlock(x + 3, y + 3, z, 41);
+        for (const wx of [2, 4]) world.setBlock(x + wx, y + 2, z, 51);
+    }
+};

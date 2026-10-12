@@ -1,0 +1,834 @@
+[
+  {
+    "id": "stone_pickaxe",
+    "name": "Pioche stone",
+    "grid": 3,
+    "pattern": [
+      [
+        1,
+        1,
+        1
+      ],
+      [
+        0,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1002,
+      "count": 1
+    }
+  },
+  {
+    "id": "stone_axe",
+    "name": "Hache stone",
+    "grid": 3,
+    "pattern": [
+      [
+        1,
+        1,
+        0
+      ],
+      [
+        1,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1012,
+      "count": 1
+    }
+  },
+  {
+    "id": "stone_shovel",
+    "name": "Pelle stone",
+    "grid": 3,
+    "pattern": [
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1022,
+      "count": 1
+    }
+  },
+  {
+    "id": "stone_sword",
+    "name": "Épée stone",
+    "grid": 3,
+    "pattern": [
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1032,
+      "count": 1
+    }
+  },
+  {
+    "id": "iron_pickaxe",
+    "name": "Pioche iron",
+    "grid": 3,
+    "pattern": [
+      [
+        1104,
+        1104,
+        1104
+      ],
+      [
+        0,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1003,
+      "count": 1
+    }
+  },
+  {
+    "id": "iron_axe",
+    "name": "Hache iron",
+    "grid": 3,
+    "pattern": [
+      [
+        1104,
+        1104,
+        0
+      ],
+      [
+        1104,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1013,
+      "count": 1
+    }
+  },
+  {
+    "id": "iron_shovel",
+    "name": "Pelle iron",
+    "grid": 3,
+    "pattern": [
+      [
+        0,
+        1104,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1023,
+      "count": 1
+    }
+  },
+  {
+    "id": "iron_sword",
+    "name": "Épée iron",
+    "grid": 3,
+    "pattern": [
+      [
+        0,
+        1104,
+        0
+      ],
+      [
+        0,
+        1104,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1033,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_pickaxe_41",
+    "name": "Pioche en bois (chêne)",
+    "grid": 3,
+    "pattern": [
+      [
+        41,
+        41,
+        41
+      ],
+      [
+        0,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1001,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_axe_41",
+    "name": "Hache en bois (chêne)",
+    "grid": 3,
+    "pattern": [
+      [
+        41,
+        41,
+        0
+      ],
+      [
+        41,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1011,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_shovel_41",
+    "name": "Pelle en bois (chêne)",
+    "grid": 3,
+    "pattern": [
+      [
+        0,
+        41,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1021,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_sword_41",
+    "name": "Épée en bois (chêne)",
+    "grid": 3,
+    "pattern": [
+      [
+        0,
+        41,
+        0
+      ],
+      [
+        0,
+        41,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1031,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_pickaxe_42",
+    "name": "Pioche en bois (acacia)",
+    "grid": 3,
+    "pattern": [
+      [
+        42,
+        42,
+        42
+      ],
+      [
+        0,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1001,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_axe_42",
+    "name": "Hache en bois (acacia)",
+    "grid": 3,
+    "pattern": [
+      [
+        42,
+        42,
+        0
+      ],
+      [
+        42,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1011,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_shovel_42",
+    "name": "Pelle en bois (acacia)",
+    "grid": 3,
+    "pattern": [
+      [
+        0,
+        42,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1021,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_sword_42",
+    "name": "Épée en bois (acacia)",
+    "grid": 3,
+    "pattern": [
+      [
+        0,
+        42,
+        0
+      ],
+      [
+        0,
+        42,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1031,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_pickaxe_43",
+    "name": "Pioche en bois (bois noir)",
+    "grid": 3,
+    "pattern": [
+      [
+        43,
+        43,
+        43
+      ],
+      [
+        0,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1001,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_axe_43",
+    "name": "Hache en bois (bois noir)",
+    "grid": 3,
+    "pattern": [
+      [
+        43,
+        43,
+        0
+      ],
+      [
+        43,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1011,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_shovel_43",
+    "name": "Pelle en bois (bois noir)",
+    "grid": 3,
+    "pattern": [
+      [
+        0,
+        43,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1021,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_sword_43",
+    "name": "Épée en bois (bois noir)",
+    "grid": 3,
+    "pattern": [
+      [
+        0,
+        43,
+        0
+      ],
+      [
+        0,
+        43,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1031,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_pickaxe_44",
+    "name": "Pioche en bois (Nyamée)",
+    "grid": 3,
+    "pattern": [
+      [
+        44,
+        44,
+        44
+      ],
+      [
+        0,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1001,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_axe_44",
+    "name": "Hache en bois (Nyamée)",
+    "grid": 3,
+    "pattern": [
+      [
+        44,
+        44,
+        0
+      ],
+      [
+        44,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1011,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_shovel_44",
+    "name": "Pelle en bois (Nyamée)",
+    "grid": 3,
+    "pattern": [
+      [
+        0,
+        44,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1021,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_sword_44",
+    "name": "Épée en bois (Nyamée)",
+    "grid": 3,
+    "pattern": [
+      [
+        0,
+        44,
+        0
+      ],
+      [
+        0,
+        44,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1031,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_pickaxe_45",
+    "name": "Pioche en bois (sapin)",
+    "grid": 3,
+    "pattern": [
+      [
+        45,
+        45,
+        45
+      ],
+      [
+        0,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1001,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_axe_45",
+    "name": "Hache en bois (sapin)",
+    "grid": 3,
+    "pattern": [
+      [
+        45,
+        45,
+        0
+      ],
+      [
+        45,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1011,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_shovel_45",
+    "name": "Pelle en bois (sapin)",
+    "grid": 3,
+    "pattern": [
+      [
+        0,
+        45,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1021,
+      "count": 1
+    }
+  },
+  {
+    "id": "wood_sword_45",
+    "name": "Épée en bois (sapin)",
+    "grid": 3,
+    "pattern": [
+      [
+        0,
+        45,
+        0
+      ],
+      [
+        0,
+        45,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1031,
+      "count": 1
+    }
+  },
+  {
+    "id": "diamond_pickaxe",
+    "name": "Pioche en diamant",
+    "grid": 3,
+    "pattern": [
+      [
+        1115,
+        1115,
+        1115
+      ],
+      [
+        0,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1004,
+      "count": 1
+    }
+  },
+  {
+    "id": "diamond_axe",
+    "name": "Hache en diamant",
+    "grid": 3,
+    "pattern": [
+      [
+        1115,
+        1115,
+        0
+      ],
+      [
+        1115,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1014,
+      "count": 1
+    }
+  },
+  {
+    "id": "diamond_shovel",
+    "name": "Pelle en diamant",
+    "grid": 3,
+    "pattern": [
+      [
+        0,
+        1115,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1024,
+      "count": 1
+    }
+  },
+  {
+    "id": "diamond_sword",
+    "name": "Épée en diamant",
+    "grid": 3,
+    "pattern": [
+      [
+        0,
+        1115,
+        0
+      ],
+      [
+        0,
+        1115,
+        0
+      ],
+      [
+        0,
+        1101,
+        0
+      ]
+    ],
+    "output": {
+      "id": 1034,
+      "count": 1
+    }
+  }
+]
