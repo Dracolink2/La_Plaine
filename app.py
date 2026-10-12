@@ -4,17 +4,42 @@ import secrets
 from datetime import datetime, timezone
 import math
 import json
+import sys
+import shutil
 
 from flask import Flask, render_template, jsonify, request
 
-app = Flask(__name__)
+# En mode PyInstaller, les ressources (templates/static) sont dans _MEIPASS,
+# mais les sauvegardes doivent rester à côté de l'exécutable, jamais dans le
+# dossier temporaire qui est supprimé à la fermeture.
+RESOURCE_DIR = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+if getattr(sys, "frozen", False):
+    DATA_DIR = os.path.dirname(os.path.abspath(sys.executable))
+else:
+    DATA_DIR = os.path.dirname(os.path.abspath(__file__))
+
+app = Flask(
+    __name__,
+    template_folder=os.path.join(RESOURCE_DIR, "templates"),
+    static_folder=os.path.join(RESOURCE_DIR, "static"),
+)
 
                                                                               
                                 
                                                                               
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATABASE = os.path.join(BASE_DIR, "worlds.db")
+BASE_DIR = DATA_DIR
+DATABASE = os.path.join(DATA_DIR, "worlds.db")
+# Migration douce des anciennes versions PyInstaller qui plaçaient la base dans
+# le dossier des ressources (_internal). On ne remplace jamais une base existante.
+_legacy_database = os.path.join(RESOURCE_DIR, "worlds.db")
+if not os.path.exists(DATABASE) and os.path.isfile(_legacy_database) and os.path.abspath(_legacy_database) != os.path.abspath(DATABASE):
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        shutil.copy2(_legacy_database, DATABASE)
+    except OSError:
+        # Le démarrage doit rester possible même si l'ancien dossier est en lecture seule.
+        pass
 
 
 def utc_now():
@@ -217,7 +242,7 @@ def create_world():
     world_id = cursor.lastrowid
     db.execute("""
         INSERT INTO world_state (world_id, current_dimension, day_time, generation_version, updated_at)
-        VALUES (?, 'overworld', 48, 2, ?)
+        VALUES (?, 'overworld', 48, 3, ?)
     """, (world_id, now))
     db.commit()
 
@@ -425,7 +450,7 @@ def get_world_state(world_id):
         now = utc_now()
         db.execute("""
             INSERT INTO world_state (world_id, current_dimension, day_time, generation_version, updated_at)
-            VALUES (?, 'overworld', 48, 2, ?)
+            VALUES (?, 'overworld', 48, 3, ?)
         """, (world_id, now))
         db.commit()
         row = db.execute("SELECT * FROM world_state WHERE world_id = ?", (world_id,)).fetchone()

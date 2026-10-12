@@ -9,6 +9,13 @@ echo    Debut de la compilation du projet
 echo =========================================
 
 :: Nettoyage des anciens fichiers de build
+:: Sauvegarder la base du jeu avant de supprimer l'ancien dossier dist.
+:: worlds.db contient les mondes : ne jamais l'effacer pendant une recompilation.
+if exist "dist\La_Plaine\worlds.db" (
+    echo Sauvegarde de worlds.db avant recompilation...
+    copy /Y "dist\La_Plaine\worlds.db" "worlds.db" >nul
+)
+
 echo Nettoyage des anciens builds...
 if exist build rmdir /s /q build
 if exist dist rmdir /s /q dist
@@ -29,6 +36,11 @@ echo Compilation en cours...
     --add-data "static;static" ^
     --name "La_Plaine" ^
     app.py
+
+:: Restaurer la base sauvegardee a cote du nouvel executable.
+if exist "worlds.db" (
+    if exist "dist\La_Plaine" copy /Y "worlds.db" "dist\La_Plaine\worlds.db" >nul
+)
 
 echo =========================================
 echo    Compilation terminee !
