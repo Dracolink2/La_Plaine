@@ -1,6 +1,3 @@
-// ============================================================================
-//  main.js — La Plaine (version optimisée)
-// ============================================================================
 (function () {
     const loadingText = document.getElementById('loading-text');
     const setStatus = (t) => { if (loadingText) loadingText.textContent = t; };
@@ -11,7 +8,6 @@
     });
 
     async function main() {
-        // --- 1. SCÈNE ET RENDU ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87ceeb);
         scene.fog = new THREE.Fog(0x87ceeb, 20, 44);
@@ -27,8 +23,7 @@
         canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;display:block;z-index:0;';
         document.body.appendChild(canvas);
 
-        // --- RÉSOLUTION : réglage du menu + adaptation automatique en mode "auto" ---
-        let autoScale = 1; // ne fait que baisser si le PC n'arrive pas à tenir les FPS
+        let autoScale = 1; 
         function applyResolution() {
             const setting = localStorage.getItem('gameResolution') || 'auto';
             const fixed = { '480p': 480, '720p': 720, '1080p': 1080, '2k': 1440, '4k': 2160 }[setting];
@@ -41,12 +36,10 @@
         applyResolution();
         window.addEventListener('resize', applyResolution);
 
-        // Overlay "sous l'eau" : un simple div translucide (bien moins coûteux qu'un filtre CSS sur le canvas)
         const waterOverlay = document.createElement('div');
         waterOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(20,80,170,0.32);pointer-events:none;display:none;z-index:12;';
         document.body.appendChild(waterOverlay);
 
-        // --- 2. MONDE, PARTICULES ET JOUEUR ---
         setStatus('Chargement des textures...');
         const world = new World(scene);
         await world.init(setStatus);
@@ -64,7 +57,6 @@
         const cloudToggleGame = document.getElementById('cloud-toggle-game');
         const waterShaderToggleGame = document.getElementById('water-shader-toggle-game');
 
-        // --- 3. GÉNÉRATION DU MONDE DE DÉPART ---
         const preRadius = Math.min(world.renderDistance, 2);
         await world.preload(0, 0, preRadius, (p) => setStatus('Génération du terrain... ' + Math.round(p * 100) + '%'));
 
@@ -79,7 +71,6 @@
         if (loadingOverlay) loadingOverlay.style.display = 'none';
         if (clickOverlay) clickOverlay.style.display = 'flex';
 
-        // --- 4. OVERLAYS & CONTRÔLES ---
         if (cloudToggleGame) {
             cloudToggleGame.checked = localStorage.getItem('showClouds') !== 'false';
             cloudToggleGame.addEventListener('change', (e) => {
@@ -114,7 +105,6 @@
             if (!e.detail.open && player.controls) player.controls.lock();
         });
 
-        // --- 5. INTERACTION AVEC LES BLOCS (rayon DDA, zéro allocation) ---
         const REACH = 6;
         const hit = { x: 0, y: 0, z: 0, id: 0, nx: 0, ny: 0, nz: 0 };
         const dir = new THREE.Vector3();
@@ -146,7 +136,6 @@
             const slot = player.inventory.getSelectedSlot();
             if (!slot || slot.type === 0 || slot.count <= 0) return;
 
-            // Viser une plante la remplace ; sinon on pose contre la face visée
             let px = hit.x + hit.nx, py = hit.y + hit.ny, pz = hit.z + hit.nz;
             if (world.plantT[hit.id]) { px = hit.x; py = hit.y; pz = hit.z; }
             if (py < 0 || py >= world.maxHeight) return;
@@ -154,7 +143,6 @@
             const cur = world.getBlockI(px, py, pz);
             if (cur !== 0 && !world.fluidT[cur] && !world.plantT[cur]) return;
 
-            // Ne pas s'emmurer : refuse si un bloc plein chevauche le joueur
             if (world.solidT[slot.type]) {
                 const p = player.position, hw = player.width / 2;
                 if (px < p.x + hw && px + 1 > p.x - hw &&
@@ -185,7 +173,6 @@
         window.addEventListener('mouseup', (e) => { if (e.button === mouseHeld) mouseHeld = -1; });
         window.addEventListener('contextmenu', (e) => e.preventDefault());
 
-        // --- 6. BOUCLE PRINCIPALE ---
         const fpsVal = document.getElementById('fps-val');
         const savedLimit = localStorage.getItem('fpsLimit') || 'max';
         const limit = savedLimit === 'max' ? 0 : parseInt(savedLimit, 10) || 0;
@@ -199,14 +186,12 @@
             requestAnimationFrame(animate);
             now = now || performance.now();
 
-            // Limiteur de FPS (réglage du menu)
             if (minFrame && now - lastFrame < minFrame - 1) return;
             lastFrame = now;
 
             const delta = Math.min((now - prevTime) * 0.001, 0.1);
             prevTime = now;
 
-            // Compteur FPS + résolution adaptative (mode auto uniquement)
             frameCount++;
             if (now - lastFpsUpdate >= 1000) {
                 const fps = (frameCount * 1000) / (now - lastFpsUpdate);
@@ -239,7 +224,6 @@
                 lastChunkUpdate = now;
             }
 
-            // Bloc visé + répétition du clic maintenu
             const locked = player.controls && player.controls.isLocked;
             if (locked && updateTarget()) {
                 selBox.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);
@@ -252,7 +236,6 @@
                 selBox.visible = false;
             }
 
-            // Sous l'eau : brouillard épais + voile bleu + son étouffé
             const underwater = world.isFluidAt(camera.position.x, camera.position.y, camera.position.z);
             if (underwater !== wasUnderwater) {
                 wasUnderwater = underwater;
