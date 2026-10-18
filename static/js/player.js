@@ -1,10 +1,8 @@
-// --- INVENTAIRE ---
-// 36 cases : 9 pour la hotbar (0-8), 27 pour le sac (9-35). Stack max : 100.
+
 const INVENTORY_SIZE = 36;
 const HOTBAR_SIZE = 9;
 const STACK_LIMIT = 100;
 
-// Icône d'un bloc (texture) pour la hotbar et l'inventaire
 function applyBlockIcon(el, def) {
     const t = def && def.textures;
     const url = t ? (t.all || t.sides || t.top || '') : '';
@@ -195,7 +193,6 @@ class Player {
 
         this.stepTimer = 0;
         
-        // 0: 1re personne, 1: 3e personne vue arrière, 2: 3e personne vue face
         this.cameraMode = 0;
         this.thirdPersonDistance = 3.5;
 
@@ -374,7 +371,6 @@ class Player {
     }
 
     toggleCameraMode() {
-        // Switch entre 0 (1re pers), 1 (3e pers arrière), 2 (3e pers face)
         this.cameraMode = (this.cameraMode + 1) % 3;
         this.playerGroup.visible = (this.cameraMode !== 0);
     }
@@ -414,8 +410,6 @@ class Player {
 
             this.pivot.y += 0.2;
             
-            // Si cameraMode === 1 -> Vue arrière (-distance)
-            // Si cameraMode === 2 -> Vue face (+distance)
             const dirFactor = (this.cameraMode === 1) ? -1 : 1;
             this.desiredPos.copy(this.pivot).addScaledVector(this.lookDir, dirFactor * this.thirdPersonDistance);
             
