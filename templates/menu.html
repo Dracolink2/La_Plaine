@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Plaine V0.1.0.0 - Menu</title>
+    <title>La Plaine V0.1.0.1 - Menu</title>
     <link rel="stylesheet" href="/static/css/menu.css">
 </head>
 <body>
 
-    <!-- Fond d'écran animé -->
     <div id="bg-slideshow"></div>
 
     <div id="main-menu">
@@ -21,7 +20,6 @@
             <button id="btn-controls" class="btn-menu">COMMANDES</button>
         </div>
 
-        <!-- Options / Paramètres -->
         <div id="settings-modal" class="modal">
             <h3>Monde & Performances</h3>
 
@@ -91,7 +89,6 @@
             </div>
         </div>
 
-        <!-- Commandes -->
         <div id="controls-modal" class="modal">
             <h3>Contrôles</h3>
             <ul>
@@ -107,7 +104,7 @@
         </div>
     </div>
 
-    <div class="version-tag">La Plaine · V0.1.0.0</div>
+    <div class="version-tag">La Plaine · V0.1.0.1</div>
 
     <script src="/static/js/sound.js"></script>
     <script>
@@ -122,7 +119,6 @@
         const cloudToggleMenu = document.getElementById('cloud-toggle-menu');
         const waterShaderToggleMenu = document.getElementById('water-shader-toggle-menu');
 
-        // Réglages Audio
         const volMasterInput = document.getElementById('vol-master');
         const volMusicInput = document.getElementById('vol-music');
         const volSfxInput = document.getElementById('vol-sfx');
@@ -131,7 +127,6 @@
         const volMusicVal = document.getElementById('vol-music-val');
         const volSfxVal = document.getElementById('vol-sfx-val');
 
-        // Charger et afficher les volumes
         volMasterInput.value = soundManager.masterVolume * 100;
         volMasterVal.textContent = Math.round(soundManager.masterVolume * 100) + '%';
 
@@ -159,7 +154,6 @@
             soundManager.setSfxVolume(val);
         });
 
-        // Charger la distance d'affichage
         const savedDistance = localStorage.getItem('renderDistance') || 3;
         renderInput.value = savedDistance;
         renderVal.textContent = savedDistance;
@@ -170,7 +164,6 @@
             localStorage.setItem('renderDistance', val);
         });
 
-        // Charger la limite de FPS
         const savedFps = localStorage.getItem('fpsLimit') || 'max';
         fpsSelect.value = savedFps;
 
@@ -178,7 +171,6 @@
             localStorage.setItem('fpsLimit', e.target.value);
         });
 
-        // Charger la résolution
         const savedRes = localStorage.getItem('gameResolution') || 'auto';
         resSelect.value = savedRes;
 
@@ -186,7 +178,6 @@
             localStorage.setItem('gameResolution', e.target.value);
         });
 
-        // Charger l'état des nuages
         const savedClouds = localStorage.getItem('showClouds') !== 'false';
         cloudToggleMenu.checked = savedClouds;
 
@@ -194,7 +185,6 @@
             localStorage.setItem('showClouds', e.target.checked);
         });
 
-        // Charger l'état du shader d'eau
         const savedWaterShader = localStorage.getItem('fxWaterShader') !== 'false';
         waterShaderToggleMenu.checked = savedWaterShader;
 
@@ -212,7 +202,6 @@
             controlsModal.style.display = (controlsModal.style.display === 'block') ? 'none' : 'block';
         });
 
-        // --- DIAPORAMA DES TEXTURES (FOND D'ÉCRAN) ---
         const textures = [
             '/static/textures/dirt.png',
             '/static/textures/grass_side.png',
