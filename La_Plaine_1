@@ -11,3 +11,9 @@ dans ce cas là on fait pas( et on feras que si La Plaine devient un peu suivie 
 Et c'est bon , après pas trop de temps de dev car l'IA est trop forte, bah on l'as fait, la 0.2.5.0, bon en fait La Plaine commence à sonner comme un truc qui fait pitier,
 mais bref, je vais donc continuer encore un peu le dev de la 0.2.5.0 ( optimisations et amélioration des deux systèmes), et je vais poster des mods 
 Les versions .exe n'auront pas droit à un vrai système de mods, mais des mods et shaders seront mis de base quand même.
+
+Nous vennons de finir la 0.2.5.0 avec des optimisations, mais bien sûr, des shaders et des mods pour que La Plaine soit plus vibrante, des tests ont étés fait sur 
+des ordinateurs faible, et les performances y sont excellente, même avec les shaders ( nous tennons à dire que les tests ne reflètent pas la réalité sur toutes les machines)
+Le premier mod permet de changer la saturation du jeu entre 0% et 1000%, et le premier shader fait permet de rendre le jeu comme en 2D, et aussi un autre shaders qui ajoute
+des animations, des sons, qui allonge les jours, et qui ajoute des ombres aussi ( il vas avec un mod ).
+Nous sommes toujours en train d'améliorer cette version, mais elle seras disponnible à la fin des vacances ( ainsi que, peut être, le launcher)
