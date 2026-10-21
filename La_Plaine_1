@@ -17,3 +17,9 @@ des ordinateurs faible, et les performances y sont excellente, même avec les sh
 Le premier mod permet de changer la saturation du jeu entre 0% et 1000%, et le premier shader fait permet de rendre le jeu comme en 2D, et aussi un autre shaders qui ajoute
 des animations, des sons, qui allonge les jours, et qui ajoute des ombres aussi ( il vas avec un mod ).
 Nous sommes toujours en train d'améliorer cette version, mais elle seras disponnible à la fin des vacances ( ainsi que, peut être, le launcher)
+
+Nouvelle note : nous vennons de réduire drastiquement la taille du jeu ( passé de environ 7Mo à environ 2Mo ), et nous sommes en train de réparer quelques petites choses,
+d'ajouter des petits effets visuels et sonores, et bien sûr, d'améliorer le système de mods.
+Ah et aussi, nous sommes sûr de mettre la 0.2.5.0 à la fin des vacances car nous apportont vraiment beaucoup de petits choses, et avec tout ça, un système de mod et shaders
+compatible avec toutes versions du jeu, nous sommes donc occupés à bien faire tout le moteur pour qu'il ne change que très rarement , et donc assurer une compatibilité extrème 
+des mods et shaders sur toutes versions .
