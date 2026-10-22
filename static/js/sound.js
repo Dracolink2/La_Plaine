@@ -6,7 +6,7 @@ class SoundManager {
         this.musicVolume = this.parseVolume('volMusic', 0.5);
         this.sfxVolume = this.parseVolume('volSfx', 0.8);
 
-        this.ambianceAudio = new Audio('/static/sounds/ambiance.wav');
+        this.ambianceAudio = new Audio('/static/sounds/ambiance.ogg');
         this.ambianceAudio.loop = true;
         this.updateMusicVolume();
 
