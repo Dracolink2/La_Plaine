@@ -1,0 +1,10 @@
+{
+  "id": "atmosphere_vivante",
+  "name": "Atmosphère vivante — Cinéma+",
+  "description": "Ajoute une ambiance cinématique avec poussières lumineuses, lucioles douces et petites particules flottantes. Réglages dans Paramètres > Mods.",
+  "version": "1.0.0",
+  "api_version": "2",
+  "entry": "main.js",
+  "dependencies": [],
+  "menu_settings": true
+}

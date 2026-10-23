@@ -1,0 +1,10 @@
+{
+  "id": "living_nature",
+  "name": "Living Nature — Vent vivant",
+  "description": "Anime les sommets des herbes et les éléments découpés avec une oscillation de vent douce, des rafales et un mouvement désynchronisé. À utiliser avec le shader Living_Nature.",
+  "version": "1.0.0",
+  "api_version": "2",
+  "entry": "main.js",
+  "dependencies": [],
+  "menu_settings": false
+}

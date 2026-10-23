@@ -1,0 +1,10 @@
+{
+  "id": "the_2d_pack",
+  "name": "The 2D Pack — Pixel Performance",
+  "description": "Transforme le rendu en rétro pixelisé et réduit la résolution interne ainsi que la distance d'affichage pour privilégier les FPS. À utiliser avec le shader The_2D_Pack.",
+  "version": "1.0.0",
+  "api_version": "2",
+  "entry": "main.js",
+  "dependencies": [],
+  "menu_settings": true
+}

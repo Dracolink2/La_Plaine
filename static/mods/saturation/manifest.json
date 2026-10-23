@@ -1,0 +1,10 @@
+{
+  "id": "saturation",
+  "name": "Réglage de saturation",
+  "description": "Règle la saturation visuelle du jeu de 0 % à 1000 %.",
+  "version": "1.1.0",
+  "api_version": "2",
+  "entry": "main.js",
+  "dependencies": [],
+  "menu_settings": true
+}
