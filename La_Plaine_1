@@ -33,3 +33,15 @@ La Plaine 0.2.5.0 est donc complète !!
 Pour le premier vrai mod de cette version nous sommesen train de travailler sur "first person hand", un mod qui ajoute une main visible simple à la première personne !! ( le mod est toujours en test et n'est pas le dernier, nous avons d'autres projets)
 Cette note ne recevras plus d'update dans pas longtemps.
 Même si avant il y as eux mention de mods et shaders, ils n'étaient que des tests, nous allons les refaire et en mieux.
+
+Nous sommes en train de prévoir pleins de mods et shaders pour La Plaine, et voici la liste :
+- First person hand (ajoute une main à la première personne )
+- multiplayer experiment ( un mod qui permet de jouer en multijoueur avec un code et un host, qui est une fonction qui viendras plus tard )
+- simple shadows ( un shaders qui ajoute des ombres pixélisés par rapport aux sources de lumières)
+- simple animations ( un mod qui ajoute des animations)
+- SA X FPH ( un mod qui ajoute des animation dans le style de simple animation pour le mod first person animation)
+- beautiful water ( un shader qui améliore l'eau pour ajouter des reflets )
+- dynamique light ( un mod qui ajoute de la lumière dynamique)
+- more particles ( ajoute et améliore les particules )
+- simple chat ( un add on du mod multiplayer experiment qui utilise le chat déjà intégré pour le multijoueur )
+- et enfin : beatiful world ( un mix de shaders et mods pour ajouter de belles animations, et effets dans le monde de La Plaine )
