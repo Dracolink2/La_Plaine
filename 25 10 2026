@@ -1,2 +1,11 @@
 C'est le premier message de cette nouvelle branche ( l'ancienne branche reste dispo pour les message pendant le dev seulement, cette branche là peut servir à tout par contre).
 Donc, dans ce message, nous allons parler de la toute dernièr eversion du jeu (25/10/2026) : La Plaine 0.2.5.0 qui est sortie et à notament ajouter le système de mods, mais aussi de shaders !!!
+
+Voici donc ce qui change par rapport à la 0.2.4.0, et quelques détails en plus !! :
+Le système de mods à été ajouté, ce qui permet à presque tout le monde de pouvoir contribuer au jeu, et de, normalement, modifier tout ce qu'ils veulent !
+Les systèmes de packs de textures et shaders ont étés ajoutés et permettent de changer le style du jeu comme bon vous semble !
+nous avons aussi ajouté une meilleure organisation dans le menu avec des catégories pour les paramètres, mais aussi de quoi mieux désactiver les particules.
+Nous avons aussi ajouté de meilleure animations pour les créatures
+une nouvelle génération du terrains incluant des minerais en veines dans le sol.
+
+Nous précisons que seuls les mods fait par nous sont 100% safe, merci de ne pas utiliser des mods inconnus !!!!
