@@ -2,4 +2,5 @@ Nous sommes en train de travailler sur des idées pour les futures versions, et 
 
 Bon, nous savons ce qui vas changer dans la 0.2.6.0, mais on est pas fière et on est désolé, nous ajoutont : les chevaux, mais sils sont grave moches,
 et nous allons, bien sûr, les améliorer dans le future, c'est surtout des prototype, toutes les versions en dessous de la V1 ne sont que des prototypes, et la V1 amélioreras tout de toutes façons, que ce soit textures, fonctionnalités, et autres.
-Ah et aussi on ajoute des crédits, des titres de versions, et on améliore le style de l'écran de chargement.
+Ah et aussi on ajoute des crédits, des titres de versions (qui remplacent le petit mot en dessous du nom du jeu), et on améliore le style de l'écran de chargement.
+Et aussi, le jeu ne fonctionne que si vous avez internet car il charge des ressources en ligne, nous allons faire en sorte que à partir de la 0.3.0.0, le jeu soit jouable entièrement sans internet.
