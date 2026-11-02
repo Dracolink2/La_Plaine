@@ -1,11 +1,11 @@
 
 
-La Plaine c'est un projet sympa entre deux amis qui font du vibe coding avec plusieurs IA.
+La Plaine c'est un projet sympa fait par un seul gars qui utilise de l'IA car il a pas le temps d'apprendre pour l'instant.
 C'est un projet fun à faire et aussi fait pour évoluer rapidement.
 La Plaine est fait pour ressembler à Minecraft , mais pas pour le remplacer ( ce qui est, de toutes façon, impossible).
 La Plaine essais de rester original.
-Nou sommes d'ailleurs désolé du fait qu'une seule version de la 0.1.0.0 existe mais nous avons perdus les autres.
-Nous faisons textures et sons nous même.
+Je suis d'ailleurs désolé du fait qu'une seule version de la 0.1.0.0 existe mais j'ai perdus les autres.
+Je fait textures et sons moi même.
 
 La Plaine contient, de base, pleins de choses (V0.2.4.0) :
 
@@ -50,5 +50,5 @@ Le troisième chiffre c'est les petits correctifs ou ajout de contenus plutôt s
 et le dernier c'est pour les remaster des versions (changement des textures, correction de bugs, changement du style, bref, que des petits trucs)
 
 Et pour les versions EXE, y'en auras pas beaucoup, ou alors elles sortirons plus longtemps après les version open source et seront beaucoup moins performantes.
-Nous conseillons donc d'installer ce qu'il faut pour lancer le jeu sans la version .exe ( nous proposerons peut être un launcher ultra léger dans le future) :
+Je conseille donc d'installer ce qu'il faut pour lancer le jeu sans la version .exe ( je vais peut être faire un launcher ultra léger dans le future) :
 Il faut installer python 3.13 ou + , et flask ( pip install flask )
