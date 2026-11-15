@@ -60,7 +60,7 @@ MARKER = ".launcher_ok.json"
 USER_AGENT = "LaPlaineLauncher/1.0"
 
 DEFAULT_SETTINGS = {
-    "versions_url": "https://github.com/Dracolink2/La_Plaine-Launcher/raw/refs/heads/versions/versions.txt",
+    "versions_url": "https://github.com/Dracolink2/La_Plaine/raw/refs/heads/versions/versions.txt",
     "auto_fetch": True,
     "open_browser": True,
     "keep_backups": 20,
