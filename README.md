@@ -8,3 +8,7 @@ Chaque version à sa propre branche, nommé uniquement avec les chiffres de vers
 les messages se trouvent dans la branche "messages".
 Toutes les versions chacune mise en ZIP sont dispo dans la branche versions.
 et d'autres branches pourront exister dans le future sans être mises ici.
+
+
+# sur cette branche :
+vous trouverez le launcher du jeu qui vas vous permettre de lancer la plupart des versions du jeu facilement, la version open source du Launcher contient moins de bugs que la version EXE, et seras largement plus mis à jour que la version EXE.
