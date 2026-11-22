@@ -5,3 +5,6 @@ Donc, cette version apporte énormément de performances, facilitant les tests, 
 
 J'ai pris beaucoup de temps sur cette update, surtout car elle était relou à faire.
 Elle peut recevoir une petit update plus tard, niveau World.js, pour déplacer quelques trucs.
+
+Désolé, petite update en plus, un fix de la 0.2.7.0.
+Des chemins de textures n'ont pas reçus l'update, et certains blocs se cassaient instantanément, ce problème là n'a pas été vus pour la simple cause que les blocks présents dans les plaines, et forêts, était correct.
