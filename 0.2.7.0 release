@@ -1,0 +1,7 @@
+Après deux versions de test, la 0.2.7.0 arrive, avec de nouveaux systèmes, un système de nouriture qui, je crois, fonctionne pas, mais surtout : l'ajout de quelques libs pour améliorer les perfs du jeu.
+Le meilleur, c'est que l'on peut arréter de spawn sur une plaine !, du base, ce n'était que possible dans de très anciennes vers de La Plaine ( avant la 0.1 )
+
+Donc, cette version apporte énormément de performances, facilitant les tests, mais aussi, si tout fonctionne bien, de quoi ajouter des fonctions via le dossiers world/, et les deux sous-dossiers.
+
+J'ai pris beaucoup de temps sur cette update, surtout car elle était relou à faire.
+Elle peut recevoir une petit update plus tard, niveau World.js, pour déplacer quelques trucs.
