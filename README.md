@@ -12,3 +12,5 @@ et d'autres branches pourront exister dans le future sans être mises ici.
 
 # sur cette branche :
 vous trouverez le launcher du jeu qui vas vous permettre de lancer la plupart des versions du jeu facilement, la version open source du Launcher contient moins de bugs que la version EXE, et seras largement plus mis à jour que la version EXE.
+
+<img width="1919" height="1005" alt="image" src="https://github.com/user-attachments/assets/1d00c596-ac47-44d2-97e4-0fef6a50c34d" />
