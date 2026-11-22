@@ -10,3 +10,4 @@ https://github.com/Dracolink2/La_Plaine/raw/refs/heads/versions/La_Plaine-0.2.5.
 https://github.com/Dracolink2/La_Plaine/raw/refs/heads/versions/La_Plaine-0.2.6.0.zip
 https://github.com/Dracolink2/La_Plaine/raw/refs/heads/versions/La_Plaine-0.2.7.0-test.zip
 https://github.com/Dracolink2/La_Plaine/raw/refs/heads/versions/La_Plaine-0.2.7.0-test2.zip
+https://github.com/Dracolink2/La_Plaine/raw/refs/heads/versions/La_Plaine-0.2.7.0.zip
