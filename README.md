@@ -13,7 +13,6 @@ et d'autres branches pourront exister dans le future sans être mises ici.
 # sur cette branche :
 vous trouverez le launcher du jeu qui vas vous permettre de lancer la plupart des versions du jeu facilement, la version open source du Launcher contient moins de bugs que la version EXE, et seras largement plus mis à jour que la version EXE.
 
-<img width="1919" height="1005" alt="image" src="https://github.com/user-attachments/assets/1d00c596-ac47-44d2-97e4-0fef6a50c34d" />
-<img width="1913" height="1002" alt="image" src="https://github.com/user-attachments/assets/c1272401-c36c-49b5-8987-cfa3dd838fd3" />
-<img width="1715" height="291" alt="image" src="https://github.com/user-attachments/assets/77a4ad82-8872-45d5-b3ad-e7f7783dc9fa" />
-<img width="137" height="35" alt="image" src="https://github.com/user-attachments/assets/861c93e2-2d0a-4306-a259-b784bc5197a2" />
+<img width="1919" height="1030" alt="image" src="https://github.com/user-attachments/assets/e234350e-e4de-434f-a776-6f0a282ee614" />
+<img width="1699" height="997" alt="image" src="https://github.com/user-attachments/assets/a2d88f2f-13bc-4c5c-a386-aa1e38d3f13b" />
+<img width="1917" height="1002" alt="image" src="https://github.com/user-attachments/assets/b48396a7-996e-45af-8c84-1256bd320c4a" />
