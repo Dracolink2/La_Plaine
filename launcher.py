@@ -1,155 +1,41 @@
-"""La Plaine Launcher - interface PySide6.
-
-Lancer :  python launcher.py
-Dépendances : PySide6, Flask (pour le jeu)
-"""
+"""La Plaine Launcher - interface Tkinter (bibliothèque incluse avec Python)."""
 import sys
 
-# Mode runner : lance le jeu d'une version, sans charger Qt.
+# Runner du jeu : ne charge pas l'interface graphique.
 if "--run-game" in sys.argv:
     import launcher_core as _core
     sys.exit(_core.run_game(sys.argv[sys.argv.index("--run-game") + 1:]))
 
-import html
+import os
+import queue
 import re
 import threading
 import time
 import webbrowser
 from pathlib import Path
-
-from PySide6.QtCore import Qt, QThread, QTimer, QUrl, Signal
-from PySide6.QtGui import QBrush, QColor, QDesktopServices, QFontDatabase
-from PySide6.QtWidgets import (
-    QAbstractItemView, QApplication, QCheckBox, QComboBox, QFileDialog, QFormLayout, QFrame,
-    QHBoxLayout, QHeaderView, QLabel, QLineEdit, QListWidget, QMainWindow, QMessageBox,
-    QPlainTextEdit, QProgressBar, QPushButton, QSpinBox, QStackedWidget, QTableWidget,
-    QTableWidgetItem, QVBoxLayout, QWidget,
-)
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
 
 import launcher_core as core
 
-APP_VERSION = "1.1"
-
-STATE_COLORS = {
-    "Prêt": "#5cc27a",
-    "Local": "#7fb2ff",
-    "En ligne": "#c9a84f",
-    "Corrompu": "#e06c6c",
-    "Incomplet": "#e06c6c",
+APP_VERSION = "1.2"
+BG = "#10141b"
+PANEL = "#191f29"
+PANEL_DARK = "#0c1016"
+FG = "#e6eaf0"
+MUTED = "#929dad"
+GREEN = "#35c477"
+VERSION_GROUPS = ("base", "tests", "named_tests")
+VERSION_GROUP_LABELS = {
+    "base": "Version principale",
+    "tests": "Tests 1 à 5",
+    "named_tests": "Versions testN",
 }
-
-STYLE = """
-* { font-family: "Segoe UI", "Inter", "Helvetica Neue", sans-serif; font-size: 13px; }
-QMainWindow, QWidget#page { background: #14161a; }
-QWidget { color: #d9dce1; }
-QWidget#side { background: #101215; border-right: 1px solid #1c1f25; }
-QLabel#brand { font-size: 15px; font-weight: 700; letter-spacing: 4px; color: #ffffff; padding: 22px 20px 6px 20px; }
-QLabel#brandsub { color: #5d636d; padding: 0 20px 14px 20px; font-size: 11px; }
-QListWidget#nav { background: transparent; border: none; outline: 0; }
-QListWidget#nav::item { padding: 12px 20px; color: #8b919b; border-left: 3px solid transparent; }
-QListWidget#nav::item:hover { color: #d9dce1; background: #15181c; }
-QListWidget#nav::item:selected { color: #ffffff; background: #1a1d22; border-left: 3px solid #4f9d5d; }
-QLabel#sidefoot { color: #4a4f58; padding: 12px 20px; font-size: 11px; }
-QLabel#title { font-size: 22px; font-weight: 600; color: #ffffff; }
-QLabel#muted { color: #8b919b; }
-QLabel#section { color: #8b919b; font-size: 11px; font-weight: 600; letter-spacing: 1px; }
-QLabel#hero { font-size: 38px; font-weight: 700; color: #ffffff; letter-spacing: 3px; }
-QLabel#herover { font-size: 16px; color: #5cc27a; font-weight: 600; }
-QFrame#card { background: #181b20; border: 1px solid #23272e; border-radius: 8px; }
-QLabel#detail { color: #b4b9c2; padding: 2px; }
-QTableWidget { background: #181b20; border: 1px solid #23272e; border-radius: 6px; gridline-color: #23272e;
-               selection-background-color: #213a28; selection-color: #ffffff; outline: 0; }
-QTableWidget::item { padding: 7px 10px; border-bottom: 1px solid #1d2025; }
-QHeaderView::section { background: #1a1d22; color: #8b919b; border: none; border-bottom: 1px solid #23272e;
-                       padding: 8px 10px; font-size: 11px; font-weight: 600; }
-QPushButton { background: #22262d; border: 1px solid #2d323a; border-radius: 6px; padding: 8px 16px; }
-QPushButton:hover:!disabled { background: #2a2f37; border-color: #3a404a; }
-QPushButton:pressed { background: #1c1f25; }
-QPushButton:disabled { color: #555b65; background: #1a1d22; border-color: #23272e; }
-QPushButton#primary { background: #3d8a4c; border-color: #3d8a4c; color: #ffffff; font-weight: 600; }
-QPushButton#primary:hover:!disabled { background: #479a58; border-color: #479a58; }
-QPushButton#primary:disabled { background: #25382a; border-color: #25382a; color: #6b7a6f; }
-QPushButton#big { background: #3d8a4c; border-color: #3d8a4c; color: #ffffff; font-size: 16px; font-weight: 700; padding: 16px 44px; border-radius: 8px; }
-QPushButton#big:hover:!disabled { background: #479a58; }
-QPushButton#big:disabled { background: #25382a; border-color: #25382a; color: #6b7a6f; }
-QPushButton#danger:hover:!disabled { background: #5a2626; border-color: #7a3333; }
-QLineEdit, QSpinBox, QComboBox { background: #181b20; border: 1px solid #2d323a; border-radius: 6px; padding: 7px 10px; }
-QLineEdit:focus, QSpinBox:focus, QComboBox:focus { border-color: #4f9d5d; }
-QComboBox QAbstractItemView { background: #181b20; selection-background-color: #213a28; border: 1px solid #2d323a; }
-QPlainTextEdit { background: #101215; border: 1px solid #23272e; border-radius: 6px; color: #b4b9c2; padding: 6px; }
-QCheckBox::indicator { width: 16px; height: 16px; border: 1px solid #3a404a; border-radius: 4px; background: #181b20; }
-QCheckBox::indicator:checked { background: #4f9d5d; border-color: #4f9d5d; }
-QProgressBar { background: #181b20; border: none; border-radius: 3px; max-height: 6px; min-height: 6px; text-align: center; color: transparent; }
-QProgressBar::chunk { background: #4f9d5d; border-radius: 3px; }
-QWidget#gamebar { background: #1b2a20; border-bottom: 1px solid #2c4a35; }
-QScrollBar:vertical { background: transparent; width: 10px; }
-QScrollBar::handle:vertical { background: #2d323a; border-radius: 5px; min-height: 30px; }
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
-"""
-
-
-class Worker(QThread):
-    progress = Signal(int, str)
-    done = Signal(object)
-    failed = Signal(str)
-
-    def __init__(self, fn, parent=None):
-        super().__init__(parent)
-        self.fn = fn
-        self.cancel = threading.Event()
-
-    def run(self):
-        try:
-            self.done.emit(self.fn(self.progress.emit, self.cancel))
-        except core.Cancelled:
-            self.failed.emit("Annulé")
-        except Exception as e:  # noqa: BLE001 - tout est remonté à l'utilisateur
-            core.log.exception("Tâche en échec")
-            self.failed.emit(str(e) or e.__class__.__name__)
-
-
-def make_button(text, name=None):
-    b = QPushButton(text)
-    if name:
-        b.setObjectName(name)
-    return b
-
-
-def make_label(text="", name=None, wrap=False):
-    lab = QLabel(text)
-    if name:
-        lab.setObjectName(name)
-    lab.setWordWrap(wrap)
-    return lab
-
-
-def make_table(headers):
-    t = QTableWidget(0, len(headers))
-    t.setHorizontalHeaderLabels(headers)
-    t.verticalHeader().setVisible(False)
-    t.verticalHeader().setDefaultSectionSize(38)
-    t.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-    t.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-    t.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-    t.setShowGrid(False)
-    t.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-    t.horizontalHeader().setStretchLastSection(True)
-    t.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
-    return t
-
-
-def set_cell(table, row, col, text, tooltip=None, color=None):
-    item = QTableWidgetItem(text)
-    if tooltip:
-        item.setToolTip(tooltip)
-    if color:
-        item.setForeground(QBrush(QColor(color)))
-    table.setItem(row, col, item)
-
-
-def open_folder(path):
-    path.mkdir(parents=True, exist_ok=True)
-    QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
+TEST_SUFFIX = re.compile(r"^(.+?)[-_. ]?test(\d*)$", re.IGNORECASE)
+STATE_COLORS = {
+    "Prêt": "#5cc27a", "Local": "#7fb2ff", "En ligne": "#c9a84f",
+    "Corrompu": "#e06c6c", "Incomplet": "#e06c6c",
+}
 
 
 def version_state(info):
@@ -166,324 +52,58 @@ def is_playable(info):
     return info.cached or info.zip_ok or bool(info.url)
 
 
-class MainWindow(QMainWindow):
+def version_group(version):
+    """Classe les versions de test automatiquement selon leur nom."""
+    value = str(version).strip()
+    if re.fullmatch(r"test\d+", value, re.IGNORECASE):
+        return "named_tests"
+    match = TEST_SUFFIX.fullmatch(value)
+    if match and re.search(r"\d", match.group(1)):
+        return "tests"
+    return "base"
+
+
+def open_folder(path):
+    path.mkdir(parents=True, exist_ok=True)
+    try:
+        os.startfile(str(path))
+    except AttributeError:
+        webbrowser.open(path.resolve().as_uri())
+
+
+class MainWindow(tk.Tk):
+    """Interface légère. Les tâches réseau et fichiers tournent en arrière-plan."""
+
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("La Plaine")
-        self.resize(1020, 640)
-        self.setMinimumSize(820, 520)
-        self.setAcceptDrops(True)
+        self.title("La Plaine")
+        self.geometry("1020x660")
+        self.minsize(820, 540)
+        self.configure(bg=BG)
         self.settings = core.load_settings()
         self.catalog = []
+        self.visible_catalog = []
         self.remote_entries = core.load_remote_cache()
-        self._fetch_t0 = 0.0
         self.remote_error = ""
+        self._fetch_t0 = 0.0
         self.home_info = None
-        self.worker = None          # tâche exclusive en cours
-        self.fetcher = None         # récupération de versions.txt
+        self.worker = None
+        self.fetcher = None
         self._on_done = None
         self._worlds = []
         self._backups = []
         self.proc = None
         self.proc_key = ""
         self.proc_port = 0
-
-        root = QWidget()
-        lay = QHBoxLayout(root)
-        lay.setContentsMargins(0, 0, 0, 0)
-        lay.setSpacing(0)
-
-        side = QWidget()
-        side.setObjectName("side")
-        side.setFixedWidth(200)
-        sv = QVBoxLayout(side)
-        sv.setContentsMargins(0, 0, 0, 0)
-        sv.setSpacing(0)
-        sv.addWidget(make_label("LA PLAINE", "brand"))
-        sv.addWidget(make_label("Launcher", "brandsub"))
-        self.nav = QListWidget()
-        self.nav.setObjectName("nav")
-        self.nav.addItems(["Accueil", "Versions", "Mondes", "Journal", "Paramètres"])
-        sv.addWidget(self.nav, 1)
-        sv.addWidget(make_label(f"v{APP_VERSION}", "sidefoot"))
-        lay.addWidget(side)
-
-        self.stack = QStackedWidget()
-        self.stack.addWidget(self._build_home())
-        self.stack.addWidget(self._build_versions())
-        self.stack.addWidget(self._build_worlds())
-        self.stack.addWidget(self._build_logs())
-        self.stack.addWidget(self._build_settings())
-
-        right = QVBoxLayout()
-        right.setContentsMargins(0, 0, 0, 0)
-        right.setSpacing(0)
-        right.addWidget(self._build_gamebar())
-        right.addWidget(self.stack, 1)
-        right.addWidget(self._build_statusbar())
-        lay.addLayout(right, 1)
-        self.setCentralWidget(root)
-
-        self.nav.currentRowChanged.connect(self._on_nav)
-        self.nav.setCurrentRow(0)
-
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self._poll_game)
-        self.timer.start(1000)
-
+        self.events = queue.Queue()
+        self._build_styles()
+        self._build_ui()
+        self.protocol("WM_DELETE_WINDOW", self.close)
+        self.after(60, self._drain_events)
+        self.after(1000, self._poll_game)
         self.refresh_catalog()
         if self.settings["auto_fetch"] and self.settings["versions_url"]:
             self.fetch_remote()
-
-    # ------------------------------------------------------------------ UI --
-    def _page(self, title, subtitle=""):
-        page = QWidget()
-        page.setObjectName("page")
-        v = QVBoxLayout(page)
-        v.setContentsMargins(28, 24, 28, 12)
-        v.setSpacing(14)
-        v.addWidget(make_label(title, "title"))
-        if subtitle:
-            v.addWidget(make_label(subtitle, "muted"))
-        return page, v
-
-    def _build_gamebar(self):
-        self.gamebar = QWidget()
-        self.gamebar.setObjectName("gamebar")
-        gb = QHBoxLayout(self.gamebar)
-        gb.setContentsMargins(28, 8, 28, 8)
-        self.game_label = QLabel()
-        self.btn_open_game = make_button("Ouvrir")
-        self.btn_stop_game = make_button("Arrêter", "danger")
-        gb.addWidget(self.game_label, 1)
-        gb.addWidget(self.btn_open_game)
-        gb.addWidget(self.btn_stop_game)
-        self.gamebar.hide()
-        self.btn_open_game.clicked.connect(self.open_game)
-        self.btn_stop_game.clicked.connect(self.stop_game)
-        return self.gamebar
-
-    def _build_home(self):
-        page = QWidget()
-        page.setObjectName("page")
-        v = QVBoxLayout(page)
-        v.setContentsMargins(28, 24, 28, 12)
-        v.addStretch(2)
-        hero = make_label("LA PLAINE", "hero")
-        hero.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.home_version = make_label("", "herover")
-        self.home_version.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.home_sub = make_label("", "muted")
-        self.home_sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.btn_home_play = make_button("Jouer", "big")
-        self.btn_home_play.setMinimumWidth(260)
-        row = QHBoxLayout()
-        row.addStretch(1)
-        row.addWidget(self.btn_home_play)
-        row.addStretch(1)
-        self.home_stats = make_label("", "muted")
-        self.home_stats.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        v.addWidget(hero)
-        v.addSpacing(4)
-        v.addWidget(self.home_version)
-        v.addWidget(self.home_sub)
-        v.addSpacing(22)
-        v.addLayout(row)
-        v.addSpacing(18)
-        v.addWidget(self.home_stats)
-        v.addStretch(3)
-        self.btn_home_play.clicked.connect(self.play_home)
-        return page
-
-    def _build_versions(self):
-        page, v = self._page("Versions", "Glisse un ZIP de version dans la fenêtre pour l'ajouter.")
-
-        top = QHBoxLayout()
-        self.in_filter = QLineEdit()
-        self.in_filter.setPlaceholderText("Filtrer les versions")
-        self.in_filter.setClearButtonEnabled(True)
-        top.addWidget(self.in_filter, 1)
-        self.btn_refresh = make_button("Actualiser")
-        self.btn_folder = make_button("Dossier versions")
-        top.addWidget(self.btn_refresh)
-        top.addWidget(self.btn_folder)
-        v.addLayout(top)
-
-        body = QHBoxLayout()
-        body.setSpacing(14)
-        self.table = make_table(["Version", "Taille", "Local", "Cache", "En ligne", "État"])
-        for col, w in enumerate((130, 90, 80, 80, 80)):
-            self.table.setColumnWidth(col, w)
-        body.addWidget(self.table, 1)
-
-        card = QFrame()
-        card.setObjectName("card")
-        card.setFixedWidth(250)
-        cv = QVBoxLayout(card)
-        cv.setContentsMargins(16, 14, 16, 14)
-        cv.addWidget(make_label("DÉTAILS", "section"))
-        self.detail = make_label("", "detail", wrap=True)
-        self.detail.setTextFormat(Qt.TextFormat.RichText)
-        self.detail.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        self.detail.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        cv.addWidget(self.detail, 1)
-        body.addWidget(card)
-        v.addLayout(body, 1)
-
-        row = QHBoxLayout()
-        self.btn_play = make_button("Jouer", "primary")
-        self.btn_dl = make_button("Télécharger")
-        self.btn_redl = make_button("Retélécharger")
-        self.btn_del = make_button("Supprimer", "danger")
-        for b in (self.btn_play, self.btn_dl, self.btn_redl, self.btn_del):
-            row.addWidget(b)
-        row.addStretch(1)
-        self.btn_clear = make_button("Vider le cache")
-        row.addWidget(self.btn_clear)
-        v.addLayout(row)
-
-        self.btn_play.clicked.connect(self.play)
-        self.btn_dl.clicked.connect(lambda: self.download(False))
-        self.btn_redl.clicked.connect(lambda: self.download(True))
-        self.btn_del.clicked.connect(self.delete_version)
-        self.btn_refresh.clicked.connect(self.on_refresh)
-        self.btn_clear.clicked.connect(self.clear_cache)
-        self.btn_folder.clicked.connect(lambda: open_folder(core.VERSIONS_DIR))
-        self.in_filter.textChanged.connect(self.apply_filter)
-        self.table.itemSelectionChanged.connect(self.on_selection)
-        self.table.itemDoubleClicked.connect(lambda _i: self.play())
-        return page
-
-    def _build_worlds(self):
-        page, v = self._page("Mondes", "Partagés entre toutes les versions. Sauvegarde automatique avant chaque lancement.")
-        self.wtable = make_table(["Nom", "Seed", "Dernière partie", "Génération"])
-        for col, w in enumerate((230, 150, 190)):
-            self.wtable.setColumnWidth(col, w)
-        v.addWidget(self.wtable, 3)
-
-        row = QHBoxLayout()
-        self.btn_export = make_button("Exporter")
-        self.btn_import = make_button("Importer")
-        self.btn_wdelete = make_button("Supprimer", "danger")
-        for b in (self.btn_export, self.btn_import, self.btn_wdelete):
-            row.addWidget(b)
-        row.addStretch(1)
-        self.btn_wrefresh = make_button("Actualiser")
-        self.btn_wfolder = make_button("Dossier saves")
-        row.addWidget(self.btn_wrefresh)
-        row.addWidget(self.btn_wfolder)
-        v.addLayout(row)
-
-        v.addWidget(make_label("SAUVEGARDES", "section"))
-        self.btable = make_table(["Date", "Taille"])
-        self.btable.setColumnWidth(0, 230)
-        v.addWidget(self.btable, 2)
-        brow = QHBoxLayout()
-        self.btn_backup = make_button("Sauvegarder maintenant")
-        self.btn_restore = make_button("Restaurer")
-        brow.addWidget(self.btn_backup)
-        brow.addWidget(self.btn_restore)
-        brow.addStretch(1)
-        v.addLayout(brow)
-
-        self.btn_export.clicked.connect(self.export_selected_world)
-        self.btn_import.clicked.connect(self.import_world)
-        self.btn_wdelete.clicked.connect(self.delete_selected_world)
-        self.btn_backup.clicked.connect(self.backup_now)
-        self.btn_restore.clicked.connect(self.restore_selected_backup)
-        self.btn_wrefresh.clicked.connect(self.refresh_worlds)
-        self.btn_wfolder.clicked.connect(lambda: open_folder(core.SAVES_DIR))
-        self.wtable.itemSelectionChanged.connect(self.update_buttons)
-        self.btable.itemSelectionChanged.connect(self.update_buttons)
-        return page
-
-    def _build_logs(self):
-        page, v = self._page("Journal")
-        row = QHBoxLayout()
-        self.log_combo = QComboBox()
-        self.btn_log_refresh = make_button("Actualiser")
-        self.btn_log_folder = make_button("Dossier logs")
-        row.addWidget(self.log_combo, 1)
-        row.addWidget(self.btn_log_refresh)
-        row.addWidget(self.btn_log_folder)
-        v.addLayout(row)
-        self.log_view = QPlainTextEdit()
-        self.log_view.setReadOnly(True)
-        self.log_view.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
-        self.log_view.setFont(QFontDatabase.systemFont(QFontDatabase.SystemFont.FixedFont))
-        v.addWidget(self.log_view, 1)
-        self.log_combo.currentIndexChanged.connect(self.show_log)
-        self.btn_log_refresh.clicked.connect(self.refresh_logs)
-        self.btn_log_folder.clicked.connect(lambda: open_folder(core.LOGS_DIR))
-        return page
-
-    def _build_settings(self):
-        page, v = self._page("Paramètres")
-        form = QFormLayout()
-        form.setSpacing(14)
-        form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.in_url = QLineEdit(self.settings["versions_url"])
-        self.in_auto = QCheckBox("Charger la liste en ligne au démarrage")
-        self.in_auto.setChecked(self.settings["auto_fetch"])
-        self.in_browser = QCheckBox("Ouvrir le navigateur au lancement")
-        self.in_browser.setChecked(self.settings["open_browser"])
-        self.in_keep = QSpinBox()
-        self.in_keep.setRange(1, 200)
-        self.in_keep.setValue(self.settings["keep_backups"])
-        form.addRow("versions.txt", self.in_url)
-        form.addRow("", self.in_auto)
-        form.addRow("", self.in_browser)
-        form.addRow("Sauvegardes conservées", self.in_keep)
-        v.addLayout(form)
-        row = QHBoxLayout()
-        btn_save = make_button("Enregistrer", "primary")
-        btn_reset = make_button("Valeurs par défaut")
-        row.addWidget(btn_save)
-        row.addWidget(btn_reset)
-        row.addStretch(1)
-        v.addLayout(row)
-        v.addStretch(1)
-        btn_save.clicked.connect(self.save_settings)
-        btn_reset.clicked.connect(self.reset_settings)
-        return page
-
-    def _build_statusbar(self):
-        bar = QWidget()
-        bar.setObjectName("page")
-        h = QHBoxLayout(bar)
-        h.setContentsMargins(28, 4, 28, 12)
-        self.status = make_label("", "muted")
-        self.progress = QProgressBar()
-        self.progress.setFixedWidth(200)
-        self.progress.setRange(0, 100)
-        self.progress.hide()
-        self.btn_cancel = make_button("Annuler")
-        self.btn_cancel.hide()
-        self.btn_cancel.clicked.connect(self.cancel_task)
-        h.addWidget(self.status, 1)
-        h.addWidget(self.progress)
-        h.addWidget(self.btn_cancel)
-        return bar
-
-    # ------------------------------------------------------------- état ----
-    def say(self, text):
-        self.status.setText(text)
-
-    def _on_nav(self, row):
-        self.stack.setCurrentIndex(max(row, 0))
-        if row == 0:
-            self.update_home()
-        elif row == 2:
-            self.refresh_worlds()
-        elif row == 3:
-            self.refresh_logs()
-        self.update_buttons()
-
-    def selected_info(self):
-        rows = self.table.selectionModel().selectedRows()
-        if not rows or rows[0].row() >= len(self.catalog):
-            return None
-        return self.catalog[rows[0].row()]
 
     @property
     def game_running(self):
@@ -493,232 +113,555 @@ class MainWindow(QMainWindow):
     def busy(self):
         return self.worker is not None
 
+    def _build_styles(self):
+        style = ttk.Style(self)
+        style.theme_use("clam")
+        style.configure("TFrame", background=BG)
+        style.configure("Panel.TFrame", background=PANEL)
+        style.configure("Side.TFrame", background=PANEL_DARK)
+        style.configure("TLabel", background=BG, foreground=FG, font=("Segoe UI", 10))
+        style.configure("Muted.TLabel", background=BG, foreground=MUTED)
+        style.configure("Title.TLabel", background=BG, foreground="#ffffff", font=("Segoe UI", 22, "bold"))
+        style.configure("Hero.TLabel", background=BG, foreground="#ffffff", font=("Segoe UI", 32, "bold"))
+        style.configure("Card.TFrame", background=PANEL, relief="flat")
+        style.configure("CardTitle.TLabel", background=PANEL, foreground="#ffffff", font=("Segoe UI", 10, "bold"))
+        style.configure("CardValue.TLabel", background=PANEL, foreground="#ffffff", font=("Segoe UI", 18, "bold"))
+        style.configure("Accent.TLabel", background=BG, foreground=GREEN, font=("Segoe UI", 9, "bold"))
+        style.configure("Brand.TLabel", background=PANEL_DARK, foreground="#ffffff", font=("Segoe UI", 14, "bold"))
+        style.configure("Section.TLabel", background=BG, foreground=MUTED, font=("Segoe UI", 9, "bold"))
+        style.configure("TButton", background="#232a35", foreground=FG, padding=(12, 8), borderwidth=0)
+        style.map("TButton", background=[("active", "#303a49"), ("disabled", PANEL)])
+        style.configure("Primary.TButton", background="#238b55", foreground="white", padding=(14, 9), font=("Segoe UI", 10, "bold"))
+        style.map("Primary.TButton", background=[("active", "#2ba566"), ("disabled", "#25382a")])
+        style.configure("Nav.TButton", background=PANEL_DARK, foreground=MUTED, anchor="w", padding=(18, 12), borderwidth=0)
+        style.map("Nav.TButton", background=[("active", "#1b2430")], foreground=[("active", "white")])
+        style.configure("SelectedNav.TButton", background="#1b2c25", foreground="#70e0a2", anchor="w",
+                        padding=(18, 12), borderwidth=0, font=("Segoe UI", 10, "bold"))
+        style.configure("Group.TButton", background=PANEL, foreground=MUTED, padding=(13, 8), borderwidth=0)
+        style.map("Group.TButton", background=[("active", "#222c38")], foreground=[("active", "white")])
+        style.configure("GroupSelected.TButton", background="#1b3a2b", foreground="#8bf0b6",
+                        padding=(13, 8), borderwidth=0, font=("Segoe UI", 9, "bold"))
+        style.configure("Treeview", background=PANEL, fieldbackground=PANEL, foreground=FG,
+                        rowheight=34, borderwidth=0, font=("Segoe UI", 10))
+        style.configure("Treeview.Heading", background="#202734", foreground=MUTED,
+                        padding=10, font=("Segoe UI", 9, "bold"), relief="flat")
+        style.map("Treeview", background=[("selected", "#1e4833")], foreground=[("selected", "white")])
+        style.configure("TEntry", fieldbackground=PANEL, foreground=FG, padding=9)
+        style.configure("TCombobox", fieldbackground=PANEL, foreground=FG, padding=6)
+        style.configure("Horizontal.TProgressbar", troughcolor=PANEL, background=GREEN)
+        style.configure("TCheckbutton", background=BG, foreground=FG)
+
+    def _build_ui(self):
+        outer = ttk.Frame(self)
+        outer.pack(fill="both", expand=True)
+        side = ttk.Frame(outer, style="Side.TFrame", width=200)
+        side.pack(side="left", fill="y")
+        side.pack_propagate(False)
+        ttk.Label(side, text="LA PLAINE", style="Brand.TLabel", padding=(18, 22, 8, 2)).pack(anchor="w")
+        ttk.Label(side, text="Launcher", background=PANEL_DARK, foreground="#5d636d",
+                  padding=(18, 0, 8, 20)).pack(anchor="w")
+        self.nav_buttons = []
+        self.pages_host = ttk.Frame(outer)
+        self.pages_host.pack(side="left", fill="both", expand=True)
+        for index, label in enumerate(("Accueil", "Versions", "Mondes", "Journal", "Paramètres")):
+            b = ttk.Button(side, text=label, style="Nav.TButton", command=lambda i=index: self._on_nav(i))
+            b.pack(fill="x")
+            self.nav_buttons.append(b)
+        ttk.Label(side, text=f"v{APP_VERSION}", background=PANEL_DARK,
+                  foreground="#4a4f58", padding=(18, 12)).pack(side="bottom", anchor="w")
+
+        self.gamebar = ttk.Frame(self.pages_host, padding=(20, 8))
+        self.game_label = ttk.Label(self.gamebar, text="")
+        self.game_label.pack(side="left", expand=True, anchor="w")
+        ttk.Button(self.gamebar, text="Ouvrir", command=self.open_game).pack(side="right", padx=4)
+        ttk.Button(self.gamebar, text="Arrêter", command=self.stop_game).pack(side="right", padx=4)
+        self.gamebar.pack_forget()
+
+        self.pages = [ttk.Frame(self.pages_host, padding=(28, 24, 28, 12)) for _ in range(5)]
+        for p in self.pages:
+            p.place(relx=0, rely=0, relwidth=1, relheight=1)
+        self._build_home(self.pages[0])
+        self._build_versions(self.pages[1])
+        self._build_worlds(self.pages[2])
+        self._build_logs(self.pages[3])
+        self._build_settings(self.pages[4])
+        self._on_nav(0)
+
+        statusbar = ttk.Frame(self.pages_host, padding=(28, 4, 28, 10))
+        statusbar.place(relx=0, rely=1, anchor="sw", relwidth=1)
+        self.status = ttk.Label(statusbar, text="", style="Muted.TLabel")
+        self.status.pack(side="left", fill="x", expand=True)
+        self.progress = ttk.Progressbar(statusbar, mode="determinate", length=180, maximum=100)
+        self.btn_cancel = ttk.Button(statusbar, text="Annuler", command=self.cancel_task)
+        self.btn_cancel.pack_forget()
+        self.progress.pack_forget()
+
+    def _page_heading(self, parent, title, subtitle=""):
+        ttk.Label(parent, text=title, style="Title.TLabel").pack(anchor="w", pady=(0, 4))
+        if subtitle:
+            ttk.Label(parent, text=subtitle, style="Muted.TLabel").pack(anchor="w", pady=(0, 14))
+
+    def _build_home(self, page):
+        content = ttk.Frame(page)
+        content.pack(fill="both", expand=True, pady=70)
+        ttk.Label(content, text="LA PLAINE", style="Hero.TLabel").pack(pady=(20, 8))
+        self.home_version = ttk.Label(content, text="", foreground="#5cc27a", background=BG,
+                                      font=("Segoe UI", 15, "bold"))
+        self.home_version.pack(pady=4)
+        self.home_sub = ttk.Label(content, text="", style="Muted.TLabel")
+        self.home_sub.pack(pady=4)
+        self.btn_home_play = ttk.Button(content, text="Jouer", style="Primary.TButton", command=self.play_home)
+        self.btn_home_play.pack(pady=20, ipadx=45, ipady=8)
+        self.home_stats = ttk.Label(content, text="", style="Muted.TLabel")
+        self.home_stats.pack(pady=8)
+
+    def _build_versions(self, page):
+        self._page_heading(page, "Versions", "La version principale et les builds de test sont classés automatiquement.")
+        self.group_bar = ttk.Frame(page)
+        self.group_bar.pack(fill="x", pady=(0, 12))
+        self.group_buttons = {}
+        self.version_group_var = "base"
+        for group in VERSION_GROUPS:
+            button = ttk.Button(self.group_bar, text=VERSION_GROUP_LABELS[group], style="Group.TButton",
+                                command=lambda g=group: self.set_version_group(g))
+            button.pack(side="left", padx=(0, 8))
+            self.group_buttons[group] = button
+
+        current = ttk.Frame(page, style="Card.TFrame", padding=(16, 11))
+        current.pack(fill="x", pady=(0, 12))
+        current_text = ttk.Frame(current, style="Card.TFrame")
+        current_text.pack(side="left", fill="x", expand=True)
+        ttk.Label(current_text, text="VERSION PRINCIPALE", style="Accent.TLabel").pack(anchor="w")
+        self.current_version_label = ttk.Label(current_text, text="Chargement…", style="CardValue.TLabel")
+        self.current_version_label.pack(anchor="w", pady=(3, 0))
+        self.current_version_sub = ttk.Label(current_text, text="Dernière version stable disponible", style="CardTitle.TLabel")
+        self.current_version_sub.pack(anchor="w", pady=(1, 0))
+        self.btn_current_play = ttk.Button(current, text="Jouer", style="Primary.TButton", command=self.play_current)
+        self.btn_current_play.pack(side="right", padx=(12, 0))
+
+        top = ttk.Frame(page)
+        top.pack(fill="x", pady=(0, 12))
+        self.filter_var = tk.StringVar()
+        self.filter_var.trace_add("write", lambda *_: self.apply_filter())
+        ttk.Entry(top, textvariable=self.filter_var).pack(side="left", fill="x", expand=True, padx=(0, 8))
+        ttk.Button(top, text="Importer ZIP", command=self.add_zip).pack(side="left", padx=3)
+        ttk.Button(top, text="Actualiser", command=self.on_refresh).pack(side="left", padx=3)
+        ttk.Button(top, text="Dossier", command=lambda: open_folder(core.VERSIONS_DIR)).pack(side="left", padx=3)
+
+        body = ttk.Frame(page)
+        body.pack(fill="both", expand=True)
+        self.table = self._tree(body, ("version", "size", "local", "cache", "online", "state"),
+                                ("Version", "Taille", "Local", "Cache", "En ligne", "État"),
+                                (180, 85, 75, 75, 85, 100))
+        self.table.container.pack(side="left", fill="both", expand=True)
+        self.table.bind("<<TreeviewSelect>>", lambda _e: self.on_selection())
+        self.table.bind("<Double-1>", lambda _e: self.play())
+        detail_frame = ttk.Frame(body, style="Panel.TFrame", padding=14, width=235)
+        detail_frame.pack(side="right", fill="y", padx=(12, 0))
+        detail_frame.pack_propagate(False)
+        ttk.Label(detail_frame, text="DÉTAILS", background=PANEL, foreground=MUTED).pack(anchor="w")
+        self.detail = tk.Text(detail_frame, wrap="word", bg=PANEL, fg=FG, relief="flat",
+                              state="disabled", font=("Segoe UI", 10), padx=3, pady=10)
+        self.detail.pack(fill="both", expand=True)
+
+        row = ttk.Frame(page)
+        row.pack(fill="x", pady=(12, 0))
+        self.btn_play = ttk.Button(row, text="Jouer", style="Primary.TButton", command=self.play)
+        self.btn_dl = ttk.Button(row, text="Télécharger", command=lambda: self.download(False))
+        self.btn_redl = ttk.Button(row, text="Retélécharger", command=lambda: self.download(True))
+        self.btn_del = ttk.Button(row, text="Supprimer", command=self.delete_version)
+        for b in (self.btn_play, self.btn_dl, self.btn_redl, self.btn_del):
+            b.pack(side="left", padx=(0, 6))
+        self.btn_clear = ttk.Button(row, text="Vider le cache", command=self.clear_cache)
+        self.btn_clear.pack(side="right")
+
+    def _build_worlds(self, page):
+        self._page_heading(page, "Mondes", "Partagés entre les versions. Une sauvegarde est faite avant les actions sensibles.")
+        self.wtable = self._tree(page, ("name", "seed", "played", "generation"),
+                                 ("Nom", "Seed", "Dernière partie", "Génération"), (240, 150, 190, 110))
+        self.wtable.container.pack(fill="both", expand=True)
+        self.wtable.bind("<<TreeviewSelect>>", lambda _e: self.update_buttons())
+        row = ttk.Frame(page)
+        row.pack(fill="x", pady=8)
+        self.btn_export = ttk.Button(row, text="Exporter", command=self.export_selected_world)
+        self.btn_import = ttk.Button(row, text="Importer", command=self.import_world)
+        self.btn_wdelete = ttk.Button(row, text="Supprimer", command=self.delete_selected_world)
+        for b in (self.btn_export, self.btn_import, self.btn_wdelete):
+            b.pack(side="left", padx=(0, 6))
+        ttk.Button(row, text="Actualiser", command=self.refresh_worlds).pack(side="right", padx=3)
+        ttk.Button(row, text="Dossier saves", command=lambda: open_folder(core.SAVES_DIR)).pack(side="right", padx=3)
+        ttk.Label(page, text="SAUVEGARDES", style="Section.TLabel").pack(anchor="w", pady=(4, 6))
+        self.btable = self._tree(page, ("date", "size"), ("Date", "Taille"), (230, 100))
+        self.btable.container.pack(fill="both", expand=True)
+        self.btable.bind("<<TreeviewSelect>>", lambda _e: self.update_buttons())
+        row = ttk.Frame(page)
+        row.pack(fill="x", pady=(8, 0))
+        self.btn_backup = ttk.Button(row, text="Sauvegarder maintenant", command=self.backup_now)
+        self.btn_backup.pack(side="left", padx=(0, 6))
+        self.btn_restore = ttk.Button(row, text="Restaurer", command=self.restore_selected_backup)
+        self.btn_restore.pack(side="left")
+
+    def _build_logs(self, page):
+        self._page_heading(page, "Journal")
+        row = ttk.Frame(page)
+        row.pack(fill="x", pady=(0, 10))
+        self.log_var = tk.StringVar()
+        self.log_combo = ttk.Combobox(row, textvariable=self.log_var, state="readonly")
+        self.log_combo.pack(side="left", fill="x", expand=True, padx=(0, 6))
+        self.log_combo.bind("<<ComboboxSelected>>", lambda _e: self.show_log())
+        ttk.Button(row, text="Actualiser", command=self.refresh_logs).pack(side="left", padx=3)
+        ttk.Button(row, text="Dossier logs", command=lambda: open_folder(core.LOGS_DIR)).pack(side="left", padx=3)
+        self.log_view = tk.Text(page, wrap="none", bg=PANEL_DARK, fg="#b4b9c2", relief="flat",
+                                font=("Consolas", 9), state="disabled")
+        self.log_view.pack(fill="both", expand=True)
+
+    def _build_settings(self, page):
+        self._page_heading(page, "Paramètres")
+        form = ttk.Frame(page)
+        form.pack(fill="x", pady=12)
+        ttk.Label(form, text="Adresse de versions.txt").grid(row=0, column=0, sticky="w", pady=8)
+        self.in_url = tk.StringVar(value=self.settings["versions_url"])
+        ttk.Entry(form, textvariable=self.in_url).grid(row=0, column=1, sticky="ew", padx=12, pady=8)
+        self.in_auto = tk.BooleanVar(value=self.settings["auto_fetch"])
+        ttk.Checkbutton(form, text="Charger la liste en ligne au démarrage", variable=self.in_auto).grid(
+            row=1, column=1, sticky="w", padx=12, pady=8)
+        self.in_browser = tk.BooleanVar(value=self.settings["open_browser"])
+        ttk.Checkbutton(form, text="Ouvrir le navigateur au lancement", variable=self.in_browser).grid(
+            row=2, column=1, sticky="w", padx=12, pady=8)
+        ttk.Label(form, text="Sauvegardes conservées").grid(row=3, column=0, sticky="w", pady=8)
+        self.in_keep = tk.IntVar(value=self.settings["keep_backups"])
+        ttk.Spinbox(form, from_=1, to=200, textvariable=self.in_keep, width=8).grid(
+            row=3, column=1, sticky="w", padx=12, pady=8)
+        form.columnconfigure(1, weight=1)
+        row = ttk.Frame(page)
+        row.pack(anchor="w", pady=10)
+        ttk.Button(row, text="Enregistrer", style="Primary.TButton", command=self.save_settings).pack(side="left", padx=(0, 6))
+        ttk.Button(row, text="Valeurs par défaut", command=self.reset_settings).pack(side="left")
+
+    @staticmethod
+    def _tree(parent, keys, headings, widths):
+        frame = ttk.Frame(parent)
+        tree = ttk.Treeview(frame, columns=keys, show="headings", selectmode="browse")
+        for key, heading, width in zip(keys, headings, widths):
+            tree.heading(key, text=heading)
+            tree.column(key, width=width, minwidth=55, anchor="w", stretch=True)
+        sy = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=sy.set)
+        tree.pack(side="left", fill="both", expand=True)
+        sy.pack(side="right", fill="y")
+        tree.container = frame
+        return tree
+
+    def _on_nav(self, index):
+        for i, button in enumerate(self.nav_buttons):
+            button.configure(style="SelectedNav.TButton" if i == index else "Nav.TButton")
+        self.pages[index].lift()
+        if index == 0:
+            self.update_home()
+        elif index == 2:
+            self.refresh_worlds()
+        elif index == 3:
+            self.refresh_logs()
+        self.update_buttons()
+
+    def say(self, text):
+        self.status.configure(text=text)
+
+    def _selected_index(self, tree, items):
+        sel = tree.selection()
+        if not sel:
+            return None
+        try:
+            idx = int(sel[0])
+            return items[idx] if 0 <= idx < len(items) else None
+        except (ValueError, IndexError):
+            return None
+
+    def selected_info(self):
+        return self._selected_index(self.table, self.visible_catalog)
+
+    def selected_world(self):
+        return self._selected_index(self.wtable, self._worlds)
+
     def on_selection(self):
         self.update_detail()
         self.update_buttons()
 
     def update_buttons(self):
+        if not hasattr(self, "btn_play"):
+            return
         info = self.selected_info()
         free = not self.busy
         idle = free and not self.game_running
-        self.btn_play.setEnabled(bool(info) and idle and is_playable(info))
-        self.btn_dl.setEnabled(bool(info) and free and bool(info.url) and not info.has_local)
-        self.btn_redl.setEnabled(bool(info) and free and bool(info.url) and info.has_local)
-        self.btn_del.setEnabled(bool(info) and idle and (info.has_local or info.cached))
-        self.btn_clear.setEnabled(idle)
-        self.btn_refresh.setEnabled(free)
-        self.btn_home_play.setEnabled(bool(self.home_info) and idle)
-        has_world = bool(self.wtable.selectionModel().selectedRows())
-        has_backup = bool(self.btable.selectionModel().selectedRows())
-        self.btn_export.setEnabled(free and has_world)
-        self.btn_wdelete.setEnabled(idle and has_world)
-        self.btn_import.setEnabled(idle)
-        self.btn_backup.setEnabled(free)
-        self.btn_restore.setEnabled(idle and has_backup)
+        current = next((i for i in self.catalog if version_group(i.version) == "base"), None)
+        self._enable(self.btn_current_play, bool(current and idle and is_playable(current)))
+        self._enable(self.btn_play, bool(info and idle and is_playable(info)))
+        self._enable(self.btn_dl, bool(info and free and info.url and not info.has_local))
+        self._enable(self.btn_redl, bool(info and free and info.url and info.has_local))
+        self._enable(self.btn_del, bool(info and idle and (info.has_local or info.cached)))
+        self._enable(self.btn_clear, idle)
+        self._enable(self.btn_home_play, bool(self.home_info and idle))
+        has_world = bool(self.wtable.selection())
+        has_backup = bool(self.btable.selection())
+        self._enable(self.btn_export, free and has_world)
+        self._enable(self.btn_wdelete, idle and has_world)
+        self._enable(self.btn_import, idle)
+        self._enable(self.btn_backup, free)
+        self._enable(self.btn_restore, idle and has_backup)
+
+    @staticmethod
+    def _enable(widget, enabled):
+        widget.configure(state="normal" if enabled else "disabled")
 
     def update_detail(self):
         info = self.selected_info()
-        if not info:
-            self.detail.setText("")
-            return
-        esc = html.escape
-        state = version_state(info)
-        lines = [
-            f"<span style='font-size:18px;font-weight:600;color:#fff'>{esc(info.version)}</span>",
-            f"<span style='color:{STATE_COLORS[state]}'>{state}</span>",
-            "",
-        ]
-        if info.has_local:
-            lines.append(f"<b>ZIP local</b><br>{esc(info.zip_path.name)}")
+        self.detail.configure(state="normal")
+        self.detail.delete("1.0", "end")
+        if info:
+            state = version_state(info)
+            text = [info.version, state, ""]
+            text.append(f"ZIP local : {info.zip_path.name}" if info.has_local else "ZIP local : aucun")
             if info.error:
-                lines.append(f"<span style='color:#e06c6c'>{esc(info.error)}</span>")
-        else:
-            lines.append("<b>ZIP local</b><br>aucun")
-        lines.append(f"<b>Cache</b><br>{'oui' if info.cached else 'non'}")
-        lines.append(f"<b>En ligne</b><br>{'disponible' if info.url else 'non listée'}")
-        if self.settings["last_version"] == info.version:
-            lines.append("<b>Dernière version jouée</b>")
-        self.detail.setText("<br><br>".join(lines))
+                text.append(info.error)
+            text.extend((f"Cache : {'oui' if info.cached else 'non'}",
+                         f"En ligne : {'disponible' if info.url else 'non listée'}"))
+            if self.settings["last_version"] == info.version:
+                text.append("Dernière version jouée")
+            self.detail.insert("end", "\n\n".join(text))
+        self.detail.configure(state="disabled")
+
+    def _render_catalog(self):
+        selected = self.selected_info()
+        selected_key = selected.key if selected else None
+        query = self.filter_var.get().strip().casefold()
+        self.visible_catalog = [i for i in self.catalog
+                                if version_group(i.version) == self.version_group_var
+                                and query in i.version.casefold()]
+        if self.version_group_var == "tests":
+            self.visible_catalog.sort(key=lambda i: (
+                int(TEST_SUFFIX.fullmatch(i.version).group(2) or "0"),
+                core.version_sort_key(i.version)))
+        elif self.version_group_var == "named_tests":
+            self.visible_catalog.sort(key=lambda i: int(re.search(r"\d+", i.version).group(0)))
+        self._refresh_group_buttons()
+        self.table.delete(*self.table.get_children())
+        for idx, item in enumerate(self.visible_catalog):
+            size = "—"
+            if item.has_local:
+                try:
+                    size = core.format_size(item.zip_path.stat().st_size)
+                except OSError:
+                    pass
+            local = ("Oui" if item.zip_ok else "Invalide") if item.has_local else "—"
+            state = version_state(item)
+            self.table.insert("", "end", iid=str(idx), values=(item.version, size, local,
+                              "Oui" if item.cached else "—", "Oui" if item.url else "—", state),
+                              tags=(state,))
+        for state, color in STATE_COLORS.items():
+            self.table.tag_configure(state, foreground=color)
+        if self.visible_catalog:
+            idx = next((n for n, i in enumerate(self.visible_catalog) if i.key == selected_key), 0)
+            self.table.selection_set(str(idx))
+            self.table.focus(str(idx))
+        self.update_detail()
+        self.update_buttons()
+
+    def _refresh_group_buttons(self):
+        counts = {group: sum(version_group(i.version) == group for i in self.catalog)
+                  for group in VERSION_GROUPS}
+        for group, button in self.group_buttons.items():
+            button.configure(text=f"{VERSION_GROUP_LABELS[group]}  ·  {counts[group]}",
+                             style="GroupSelected.TButton" if group == self.version_group_var else "Group.TButton")
+
+    def set_version_group(self, group):
+        if group not in VERSION_GROUPS:
+            return
+        self.version_group_var = group
+        self._render_catalog()
+
+    def play_current(self):
+        current = next((i for i in self.catalog if version_group(i.version) == "base"), None)
+        if current is None:
+            return
+        self.filter_var.set("")
+        self.version_group_var = "base"
+        self._render_catalog()
+        for idx, item in enumerate(self.visible_catalog):
+            if item.key == current.key:
+                self.table.selection_set(str(idx))
+                self.table.focus(str(idx))
+                break
+        self.play()
 
     def apply_filter(self):
-        text = self.in_filter.text().strip().lower()
-        for r, info in enumerate(self.catalog):
-            self.table.setRowHidden(r, bool(text) and text not in info.version.lower())
+        if hasattr(self, "table"):
+            self._render_catalog()
 
     def refresh_catalog(self):
         selected = self.selected_info()
         selected_key = selected.key if selected else None
         self.catalog = core.build_catalog(self.remote_entries)
-        self.table.setRowCount(len(self.catalog))
-        reselect = -1
-        for r, i in enumerate(self.catalog):
-            state = version_state(i)
-            size = "—"
-            if i.has_local:
-                try:
-                    size = core.format_size(i.zip_path.stat().st_size)
-                except OSError:
-                    pass
-            local = ("Oui" if i.zip_ok else "Invalide") if i.has_local else "—"
-            set_cell(self.table, r, 0, i.version)
-            set_cell(self.table, r, 1, size)
-            set_cell(self.table, r, 2, local, i.error or None, None if i.zip_ok or not i.has_local else "#e06c6c")
-            set_cell(self.table, r, 3, "Oui" if i.cached else "—")
-            set_cell(self.table, r, 4, "Oui" if i.url else "—")
-            set_cell(self.table, r, 5, state, i.error or None, STATE_COLORS[state])
-            if i.key == selected_key:
-                reselect = r
-        if reselect >= 0:
-            self.table.selectRow(reselect)
-        elif self.catalog and not self.table.selectionModel().selectedRows():
-            self.table.selectRow(0)
-        self.apply_filter()
+        self._render_catalog()
+        if selected_key:
+            for n, item in enumerate(self.visible_catalog):
+                if item.key == selected_key:
+                    self.table.selection_set(str(n))
+                    break
         self.update_home()
-        self.update_detail()
-        self.update_buttons()
 
     def update_home(self):
+        if not hasattr(self, "home_version"):
+            return
+        current = next((i for i in self.catalog if version_group(i.version) == "base"), None)
+        self.current_version_label.configure(text=current.version if current else "Aucune version disponible")
+        self.current_version_sub.configure(
+            text="Dernière version principale" if current else "Ajoute un ZIP ou actualise la liste en ligne")
         playable = [i for i in self.catalog if is_playable(i)]
-        last = self.settings["last_version"]
-        info = next((i for i in playable if i.version == last), None)
+        info = next((i for i in playable if i.version == self.settings["last_version"]), None)
         label = "Dernière version jouée"
         if info is None and playable:
             info, label = playable[0], "Version la plus récente"
         self.home_info = info
-        if info:
-            self.home_version.setText(info.version)
-            self.home_sub.setText(label)
-            self.btn_home_play.setText(f"Jouer {info.version}")
-        else:
-            self.home_version.setText("Aucune version")
-            self.home_sub.setText("Ajoute un ZIP dans versions/ ou charge la liste en ligne")
-            self.btn_home_play.setText("Jouer")
-        n_local = sum(1 for i in self.catalog if i.zip_ok)
-        n_online = sum(1 for i in self.catalog if i.url)
+        self.home_version.configure(text=info.version if info else "Aucune version")
+        self.home_sub.configure(text=label if info else "Ajoute un ZIP ou charge la liste en ligne")
+        self.btn_home_play.configure(text=f"Jouer {info.version}" if info else "Jouer")
+        local = sum(1 for i in self.catalog if i.zip_ok)
+        online = sum(1 for i in self.catalog if i.url)
         try:
-            n_worlds = len(core.list_worlds())
-        except Exception:  # noqa: BLE001
-            n_worlds = 0
-        self.home_stats.setText(f"{n_local} locale(s)  ·  {n_online} en ligne  ·  {n_worlds} monde(s)")
+            worlds = len(core.list_worlds())
+        except Exception:
+            worlds = 0
+        self.home_stats.configure(text=f"{local} locale(s)  ·  {online} en ligne  ·  {worlds} monde(s)")
+        self._enable(self.btn_current_play, bool(current and is_playable(current)
+                                                   and not self.busy and not self.game_running))
         self.update_buttons()
 
     def refresh_worlds(self):
         try:
-            worlds = core.list_worlds()
-        except Exception as e:  # noqa: BLE001
+            self._worlds = core.list_worlds()
+        except Exception as e:
             core.log.exception("Lecture des mondes")
-            worlds = []
+            self._worlds = []
             self.say(f"Lecture des mondes impossible : {e}")
-        self._worlds = worlds
-        self.wtable.setRowCount(len(worlds))
-        for r, w in enumerate(worlds):
-            set_cell(self.wtable, r, 0, str(w["name"]))
-            set_cell(self.wtable, r, 1, str(w["seed"]))
-            set_cell(self.wtable, r, 2, str(w["last_played"]).replace("T", " ")[:19])
-            set_cell(self.wtable, r, 3, "—" if w["generation"] is None else str(w["generation"]))
+        self.wtable.delete(*self.wtable.get_children())
+        for idx, w in enumerate(self._worlds):
+            self.wtable.insert("", "end", iid=str(idx), values=(w["name"], w["seed"],
+                              str(w["last_played"]).replace("T", " ")[:19],
+                              "—" if w["generation"] is None else w["generation"]))
         self._backups = core.list_backups()
-        self.btable.setRowCount(len(self._backups))
-        for r, b in enumerate(self._backups):
+        self.btable.delete(*self.btable.get_children())
+        for idx, b in enumerate(self._backups):
             m = re.match(r"worlds-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})", b.name)
             date = f"{m[1]}-{m[2]}-{m[3]} {m[4]}:{m[5]}:{m[6]}" if m else b.name
             try:
                 size = core.format_size(b.stat().st_size)
             except OSError:
                 size = "—"
-            set_cell(self.btable, r, 0, date, b.name)
-            set_cell(self.btable, r, 1, size)
+            self.btable.insert("", "end", iid=str(idx), values=(date, size))
         self.update_buttons()
 
     def refresh_logs(self):
         files = core.list_log_files()
-        current = self.log_combo.currentData()
-        self.log_combo.blockSignals(True)
-        self.log_combo.clear()
-        for f in files:
-            self.log_combo.addItem(f.name, str(f))
-        idx = self.log_combo.findData(current) if current else -1
-        self.log_combo.setCurrentIndex(idx if idx >= 0 else (0 if files else -1))
-        self.log_combo.blockSignals(False)
+        names = [f.name for f in files]
+        self._log_paths = {f.name: f for f in files}
+        self.log_combo.configure(values=names)
+        if self.log_var.get() not in names:
+            self.log_var.set(names[0] if names else "")
         self.show_log()
 
     def show_log(self):
-        path = self.log_combo.currentData()
-        if not path:
-            self.log_view.setPlainText("Aucun journal")
-            return
-        self.log_view.setPlainText(core.tail_file(Path(path)))
-        bar = self.log_view.verticalScrollBar()
-        bar.setValue(bar.maximum())
+        path = getattr(self, "_log_paths", {}).get(self.log_var.get())
+        text = core.tail_file(Path(path)) if path else "Aucun journal"
+        self.log_view.configure(state="normal")
+        self.log_view.delete("1.0", "end")
+        self.log_view.insert("end", text)
+        self.log_view.see("end")
+        self.log_view.configure(state="disabled")
 
-    # ------------------------------------------------- glisser-déposer ----
-    def dragEnterEvent(self, event):
-        if event.mimeData().hasUrls():
-            event.acceptProposedAction()
-
-    def dropEvent(self, event):
-        paths = [Path(u.toLocalFile()) for u in event.mimeData().urls() if u.isLocalFile()]
+    def add_zip(self):
+        paths = filedialog.askopenfilenames(title="Ajouter une ou plusieurs versions",
+                    initialdir=str(core.VERSIONS_DIR), filetypes=(("Archives ZIP", "*.zip"),))
         added, errors = 0, []
-        for p in paths:
+        for filename in paths:
             try:
-                core.install_zip(p)
+                core.install_zip(Path(filename))
                 added += 1
-            except Exception as e:  # noqa: BLE001
-                core.log.warning("Ajout refusé : %s", e)
+            except Exception as e:
                 errors.append(str(e))
-        event.acceptProposedAction()
         if added:
             self.say(f"{added} version(s) ajoutée(s)")
             self.refresh_catalog()
         if errors:
-            QMessageBox.warning(self, "La Plaine", "\n".join(errors))
+            messagebox.showwarning("La Plaine", "\n".join(errors), parent=self)
 
-    # ------------------------------------------------------------ tâches ---
+    def _drain_events(self):
+        try:
+            while True:
+                kind, payload = self.events.get_nowait()
+                if kind == "progress":
+                    pct, msg = payload
+                    self.progress.configure(mode="determinate", maximum=100, value=pct)
+                    self.say(msg)
+                elif kind == "done":
+                    callback = self._on_done
+                    self._task_end()
+                    if callback:
+                        callback(payload)
+                elif kind == "failed":
+                    self._task_end(payload)
+                elif kind == "remote_done":
+                    self._fetch_ui_end()
+                    self.remote_entries = payload
+                    self.remote_error = ""
+                    self.say(f"{len(payload)} version(s) en ligne ({time.monotonic() - self._fetch_t0:.1f} s)")
+                    self.refresh_catalog()
+                elif kind == "remote_failed":
+                    self._fetch_ui_end()
+                    self.remote_error = payload
+                    self.say(f"Liste en ligne indisponible : {payload}")
+        except queue.Empty:
+            pass
+        if self.winfo_exists():
+            self.after(60, self._drain_events)
+
     def run_task(self, fn, on_done, label):
         if self.busy:
             return
-        w = Worker(fn, self)
-        self.worker = w
+        cancel = threading.Event()
+        self.worker = cancel
         self._on_done = on_done
-        self.progress.setRange(0, 100)
-        self.progress.setValue(0)
-        self.progress.show()
-        self.btn_cancel.show()
+        self.progress.configure(mode="determinate", value=0)
+        self.progress.pack(side="right", padx=8)
+        self.btn_cancel.pack(side="right")
         self.say(label)
-        w.progress.connect(self._on_progress)
-        w.done.connect(self._task_done)
-        w.failed.connect(self._task_failed)
-        w.finished.connect(w.deleteLater)
         self.update_buttons()
-        w.start()
+        def runner():
+            try:
+                result = fn(lambda pct, msg: self.events.put(("progress", (pct, msg))), cancel)
+                self.events.put(("done", result))
+            except core.Cancelled:
+                self.events.put(("failed", "Annulé"))
+            except Exception as e:
+                core.log.exception("Tâche en échec")
+                self.events.put(("failed", str(e) or e.__class__.__name__))
+        threading.Thread(target=runner, name="LaPlaine-Task", daemon=True).start()
 
-    def _on_progress(self, pct, msg):
-        self.progress.setValue(pct)
-        self.say(msg)
-
-    def _task_done(self, result):
-        self._task_end(self._on_done, result, None)
-
-    def _task_failed(self, msg):
-        self._task_end(None, None, msg)
-
-    def _task_end(self, callback, result, error):
+    def _task_end(self, error=None):
         self.worker = None
-        self.progress.hide()
-        self.btn_cancel.hide()
+        self._on_done = None
+        self.progress.pack_forget()
+        self.btn_cancel.pack_forget()
         if error is not None:
             self.say(error)
             if error != "Annulé":
-                QMessageBox.warning(self, "La Plaine", error)
-        elif callback:
-            callback(result)
+                messagebox.showwarning("La Plaine", error, parent=self)
         self.refresh_catalog()
 
     def cancel_task(self):
         if self.worker:
-            self.worker.cancel.set()
+            self.worker.set()
             self.say("Annulation…")
 
-    # --------------------------------------------------------- versions ----
     def on_refresh(self):
         self.refresh_catalog()
         if self.settings["versions_url"]:
@@ -728,42 +671,36 @@ class MainWindow(QMainWindow):
         if self.fetcher is not None:
             return
         url = self.settings["versions_url"]
-        f = Worker(lambda _p, _c: core.fetch_remote_entries(url), self)
-        self.fetcher = f
-        f.done.connect(self._remote_ok)
-        f.failed.connect(self._remote_fail)
-        f.finished.connect(f.deleteLater)
+        self.fetcher = True
         self.say("Chargement de la liste en ligne…")
         self._fetch_t0 = time.monotonic()
         if not self.busy:
-            self.progress.setRange(0, 0)  # indéterminé
-            self.progress.show()
-        f.start()
+            self.progress.configure(mode="indeterminate")
+            self.progress.pack(side="right", padx=8)
+            self.progress.start(12)
+        def runner():
+            try:
+                self.events.put(("remote_done", core.fetch_remote_entries(url)))
+            except Exception as e:
+                self.events.put(("remote_failed", str(e)))
+        threading.Thread(target=runner, name="LaPlaine-Fetch", daemon=True).start()
 
     def _fetch_ui_end(self):
         self.fetcher = None
-        if not self.busy:
-            self.progress.hide()
-            self.progress.setRange(0, 100)
-
-    def _remote_ok(self, entries):
-        self._fetch_ui_end()
-        self.remote_entries = entries
-        self.remote_error = ""
-        self.say(f"{len(entries)} version(s) en ligne ({time.monotonic() - self._fetch_t0:.1f} s)")
-        self.refresh_catalog()
-
-    def _remote_fail(self, msg):
-        self._fetch_ui_end()
-        self.remote_error = msg
-        self.say(f"Liste en ligne indisponible : {msg}")
+        self.progress.stop()
+        self.progress.pack_forget()
+        if self.busy:
+            self.progress.configure(mode="determinate")
+            self.progress.pack(side="right", padx=8)
 
     def play_home(self):
         if not self.home_info:
             return
-        for r, i in enumerate(self.catalog):
-            if i.key == self.home_info.key:
-                self.table.selectRow(r)
+        self.filter_var.set("")
+        for idx, info in enumerate(self.visible_catalog):
+            if info.key == self.home_info.key:
+                self.table.selection_set(str(idx))
+                self.table.focus(str(idx))
                 break
         self.play()
 
@@ -773,15 +710,14 @@ class MainWindow(QMainWindow):
             return
         keep = self.settings["keep_backups"]
         open_browser = self.settings["open_browser"]
-
         def job(progress, cancel):
             game_dir = core.prepare_version(info, progress, cancel)
             progress(0, "Sauvegarde des mondes")
             try:
                 core.backup_db(keep)
-            except Exception:  # noqa: BLE001
+            except Exception as exc:
                 core.log.exception("Sauvegarde automatique échouée")
-                raise RuntimeError("Sauvegarde automatique des mondes échouée, lancement annulé. Voir le journal.")
+                raise RuntimeError("Sauvegarde automatique des mondes échouée. Voir le journal.") from exc
             progress(0, "Démarrage")
             port = core.free_port()
             proc = core.start_game(game_dir, info.key, port)
@@ -791,9 +727,8 @@ class MainWindow(QMainWindow):
                 core.stop_game(proc)
                 raise
             return proc, port
-
-        def done(res):
-            self.proc, self.proc_port = res
+        def done(result):
+            self.proc, self.proc_port = result
             self.proc_key = info.version
             self.settings["last_version"] = info.version
             try:
@@ -803,35 +738,29 @@ class MainWindow(QMainWindow):
             if open_browser:
                 webbrowser.open(f"http://127.0.0.1:{self.proc_port}/")
             self._poll_game()
-
         self.run_task(job, done, f"Préparation {info.version}")
 
     def download(self, redo):
         info = self.selected_info()
         if not info or self.busy or not info.url:
             return
-        if redo and QMessageBox.question(
-                self, "La Plaine", f"Retélécharger {info.version} ?\nLe ZIP local et le cache seront remplacés."
-        ) != QMessageBox.StandardButton.Yes:
+        if redo and not messagebox.askyesno("La Plaine", f"Retélécharger {info.version} ?\nLe ZIP et le cache seront remplacés.", parent=self):
             return
         self.run_task(lambda p, c: core.download_local(info, p, c),
-                      lambda _r: self.say(f"{info.version} téléchargée"),
-                      f"Téléchargement {info.version}")
+                      lambda _r: self.say(f"{info.version} téléchargée"), f"Téléchargement {info.version}")
 
     def delete_version(self):
         info = self.selected_info()
         if not info or self.busy or self.game_running:
             return
-        if QMessageBox.question(
-                self, "La Plaine", f"Supprimer la copie locale de {info.version} ?\nLes mondes ne sont pas touchés."
-        ) != QMessageBox.StandardButton.Yes:
+        if not messagebox.askyesno("La Plaine", f"Supprimer la copie locale de {info.version} ?\nLes mondes ne sont pas touchés.", parent=self):
             return
         try:
             core.delete_local(info)
             self.say(f"{info.version} supprimée")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             core.log.exception("Suppression")
-            QMessageBox.warning(self, "La Plaine", str(e))
+            messagebox.showwarning("La Plaine", str(e), parent=self)
         self.refresh_catalog()
 
     def clear_cache(self):
@@ -840,25 +769,28 @@ class MainWindow(QMainWindow):
         try:
             core.clear_cache()
             self.say("Cache vidé")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             core.log.exception("Vidage du cache")
-            QMessageBox.warning(self, "La Plaine", str(e))
+            messagebox.showwarning("La Plaine", str(e), parent=self)
         self.refresh_catalog()
 
-    # ----------------------------------------------------------- jeu -------
     def _poll_game(self):
-        was_shown = not self.gamebar.isHidden()
+        shown = bool(self.gamebar.winfo_manager())
         if self.game_running:
-            self.game_label.setText(f"En cours : {self.proc_key}   ·   http://127.0.0.1:{self.proc_port}")
-            self.gamebar.show()
+            self.game_label.configure(text=f"En cours : {self.proc_key}   ·   http://127.0.0.1:{self.proc_port}")
+            if not shown:
+                self.gamebar.pack(fill="x")
+                self.gamebar.lift()
         else:
             if self.proc is not None:
                 code = self.proc.poll()
                 self.say(f"Jeu arrêté (code {code})" if code else "Jeu arrêté")
             self.proc = None
-            self.gamebar.hide()
-        if was_shown != (not self.gamebar.isHidden()):
-            self.update_buttons()
+            if shown:
+                self.gamebar.pack_forget()
+        self.update_buttons()
+        if self.winfo_exists():
+            self.after(1000, self._poll_game)
 
     def open_game(self):
         if self.game_running:
@@ -868,64 +800,53 @@ class MainWindow(QMainWindow):
         core.stop_game(self.proc)
         self._poll_game()
 
-    # ----------------------------------------------------------- mondes ----
-    def selected_world(self):
-        rows = self.wtable.selectionModel().selectedRows()
-        if not rows or rows[0].row() >= len(self._worlds):
-            return None
-        return self._worlds[rows[0].row()]
-
     def export_selected_world(self):
-        w = self.selected_world()
-        if not w or self.busy:
+        world = self.selected_world()
+        if not world or self.busy:
             return
-        safe = re.sub(r'[\\/:*?"<>|]+', "_", str(w["name"])).strip() or "monde"
+        safe = re.sub(r'[\\/:*?"<>|]+', "_", str(world["name"])).strip() or "monde"
         core.EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
-        path, _ = QFileDialog.getSaveFileName(
-            self, "Exporter le monde", str(core.EXPORTS_DIR / f"{safe}.plaine"), "Monde La Plaine (*.plaine)")
+        path = filedialog.asksaveasfilename(title="Exporter le monde", initialdir=str(core.EXPORTS_DIR),
+                    initialfile=f"{safe}.plaine", defaultextension=".plaine",
+                    filetypes=(("Monde La Plaine", "*.plaine"),), parent=self)
         if not path:
             return
-        if not path.lower().endswith(".plaine"):
-            path += ".plaine"
         try:
-            core.export_world(w["id"], Path(path))
+            core.export_world(world["id"], Path(path))
             self.say(f"Monde exporté : {Path(path).name}")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             core.log.exception("Export")
-            QMessageBox.warning(self, "La Plaine", f"Export impossible : {e}")
+            messagebox.showwarning("La Plaine", f"Export impossible : {e}", parent=self)
 
     def import_world(self):
         if self.busy or self.game_running:
             return
-        path, _ = QFileDialog.getOpenFileName(
-            self, "Importer un monde", str(core.EXPORTS_DIR), "Monde La Plaine (*.plaine)")
+        path = filedialog.askopenfilename(title="Importer un monde", initialdir=str(core.EXPORTS_DIR),
+                    filetypes=(("Monde La Plaine", "*.plaine"),), parent=self)
         if not path:
             return
         try:
             core.backup_db(self.settings["keep_backups"])
             name = core.import_world(Path(path))
             self.say(f"Monde importé : {name}")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             core.log.exception("Import")
-            QMessageBox.warning(self, "La Plaine", str(e))
+            messagebox.showwarning("La Plaine", str(e), parent=self)
         self.refresh_worlds()
 
     def delete_selected_world(self):
-        w = self.selected_world()
-        if not w or self.busy or self.game_running:
+        world = self.selected_world()
+        if not world or self.busy or self.game_running:
             return
-        if QMessageBox.question(
-                self, "La Plaine",
-                f"Supprimer le monde « {w['name']} » ?\nUne sauvegarde est faite juste avant."
-        ) != QMessageBox.StandardButton.Yes:
+        if not messagebox.askyesno("La Plaine", f"Supprimer le monde « {world['name']} » ?\nUne sauvegarde est faite avant.", parent=self):
             return
         try:
             core.backup_db(self.settings["keep_backups"])
-            core.delete_world(w["id"])
-            self.say(f"Monde supprimé : {w['name']}")
-        except Exception as e:  # noqa: BLE001
+            core.delete_world(world["id"])
+            self.say(f"Monde supprimé : {world['name']}")
+        except Exception as e:
             core.log.exception("Suppression du monde")
-            QMessageBox.warning(self, "La Plaine", str(e))
+            messagebox.showwarning("La Plaine", str(e), parent=self)
         self.refresh_worlds()
         self.update_home()
 
@@ -933,77 +854,58 @@ class MainWindow(QMainWindow):
         try:
             out = core.backup_db(self.settings["keep_backups"])
             self.say(f"Sauvegarde : {out.name}" if out else "Aucun monde à sauvegarder")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             core.log.exception("Sauvegarde")
-            QMessageBox.warning(self, "La Plaine", f"Sauvegarde impossible : {e}")
+            messagebox.showwarning("La Plaine", f"Sauvegarde impossible : {e}", parent=self)
         self.refresh_worlds()
 
     def restore_selected_backup(self):
-        rows = self.btable.selectionModel().selectedRows()
-        if not rows or rows[0].row() >= len(self._backups) or self.busy or self.game_running:
+        path = self._selected_index(self.btable, self._backups)
+        if path is None or self.busy or self.game_running:
             return
-        path = self._backups[rows[0].row()]
-        if QMessageBox.question(
-                self, "La Plaine",
-                "Restaurer cette sauvegarde ?\nLes mondes actuels sont remplacés (une sauvegarde est faite juste avant)."
-        ) != QMessageBox.StandardButton.Yes:
+        if not messagebox.askyesno("La Plaine", "Restaurer cette sauvegarde ?\nLes mondes actuels seront remplacés après sauvegarde.", parent=self):
             return
         try:
             core.restore_backup(path, self.settings["keep_backups"])
             self.say("Sauvegarde restaurée")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             core.log.exception("Restauration")
-            QMessageBox.warning(self, "La Plaine", str(e))
+            messagebox.showwarning("La Plaine", str(e), parent=self)
         self.refresh_worlds()
         self.update_home()
 
-    # -------------------------------------------------------- paramètres ---
-    def _store_settings(self, settings):
-        self.settings = settings
-        try:
-            core.save_settings(self.settings)
-            self.say("Paramètres enregistrés")
-        except OSError as e:
-            QMessageBox.warning(self, "La Plaine", f"Enregistrement impossible : {e}")
-            return False
-        return True
-
     def save_settings(self):
         new = dict(self.settings)
-        new.update(
-            versions_url=self.in_url.text().strip(),
-            auto_fetch=self.in_auto.isChecked(),
-            open_browser=self.in_browser.isChecked(),
-            keep_backups=self.in_keep.value(),
-        )
-        if self._store_settings(new):
-            self.fetch_remote()
+        new.update(versions_url=self.in_url.get().strip(), auto_fetch=self.in_auto.get(),
+                   open_browser=self.in_browser.get(), keep_backups=max(1, min(200, self.in_keep.get())))
+        try:
+            core.save_settings(new)
+        except OSError as e:
+            messagebox.showwarning("La Plaine", f"Enregistrement impossible : {e}", parent=self)
+            return
+        self.settings = new
+        self.say("Paramètres enregistrés")
+        self.fetch_remote()
 
     def reset_settings(self):
         d = core.DEFAULT_SETTINGS
-        self.in_url.setText(d["versions_url"])
-        self.in_auto.setChecked(d["auto_fetch"])
-        self.in_browser.setChecked(d["open_browser"])
-        self.in_keep.setValue(d["keep_backups"])
+        self.in_url.set(d["versions_url"])
+        self.in_auto.set(d["auto_fetch"])
+        self.in_browser.set(d["open_browser"])
+        self.in_keep.set(d["keep_backups"])
 
-    # ----------------------------------------------------------- fermeture -
-    def closeEvent(self, event):
-        for w in (self.worker, self.fetcher):
-            if w is not None:
-                w.cancel.set()
-                w.wait(3000)
+    def close(self):
+        if self.worker:
+            self.worker.set()
         core.stop_game(self.proc)
-        event.accept()
+        self.destroy()
 
 
 def main():
     core.ensure_dirs()
     core.setup_logging()
-    app = QApplication(sys.argv)
-    app.setStyleSheet(STYLE)
-    win = MainWindow()
-    win.show()
-    sys.exit(app.exec())
+    app = MainWindow()
+    app.mainloop()
 
 
 if __name__ == "__main__":

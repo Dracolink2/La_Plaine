@@ -25,20 +25,12 @@ python -m PyInstaller --noconfirm --clean --onefile --windowed --name LaPlaine %
  --collect-submodules flask ^
  --collect-submodules werkzeug ^
  --collect-submodules jinja2 ^
- --hidden-import markupsafe ^
- --hidden-import itsdangerous ^
- --hidden-import click ^
- --hidden-import blinker ^
- --hidden-import secrets ^
- --hidden-import math ^
- --hidden-import io ^
- --hidden-import sqlite3 ^
  launcher.py
 if errorlevel 1 goto :error
 
 echo.
 echo Termine : dist\LaPlaine.exe
-echo Un seul fichier : copie-le ou tu veux. versions, saves, cache et logs seront crees a cote.
+echo Fichier unique. versions, saves, cache et logs seront crees a cote.
 echo.
 pause
 exit /b 0
